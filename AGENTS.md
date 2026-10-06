@@ -1,4 +1,4 @@
-# Platit prosím
+# fazole.fit
 
 Local-first payment terminal PWA for Czech merchants: bank (SPD QR), Lightning and Cashu. `docs/SPEC.md` is the product and protocol spec; read it before changing behaviour. `../linky` is the reference for stack, patterns and UI style.
 
@@ -37,4 +37,4 @@ The dev mint's FakeWallet settles nothing by itself (`FAKEWALLET_BRR: "false"`),
 
 ## Deploy
 
-`scripts/deploy.sh web-app` (https://app.platit.twoballers.dev) and `scripts/deploy.sh website` (https://platit.twoballers.dev). The script builds locally and deploys a prebuilt static output to Vercel.
+`scripts/deploy.sh web-app` (https://app.fazole.fit) and `scripts/deploy.sh website` (https://fazole.fit). The script builds locally and deploys a prebuilt static output to Vercel.

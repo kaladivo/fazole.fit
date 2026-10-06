@@ -2,8 +2,9 @@ import {
   defineConfig,
   minimal2023Preset,
 } from "@vite-pwa/assets-generator/config";
+import { brandMark } from "@platitprosim/ui/tokens";
 
-const tile = { padding: 0, resizeOptions: { background: "#4f46e5" } };
+const tile = { padding: 0, resizeOptions: { background: brandMark.color } };
 
 export default defineConfig({
   headLinkOptions: { preset: "2023" },

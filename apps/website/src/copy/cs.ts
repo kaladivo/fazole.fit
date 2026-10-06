@@ -9,7 +9,7 @@ export interface Point {
 export interface ComparisonRow {
   label: string;
   cardTerminal: string;
-  platitProsim: string;
+  fazole: string;
 }
 
 export interface FaqItem {
@@ -22,16 +22,16 @@ export const points = (items: Point[]): Point[] => items;
 
 export const cs = {
   meta: {
-    title: "Platit prosím – platby QR kódem bez provizí",
+    title: "fazole.fit – platby QR kódem bez provizí",
     description:
       "Platební terminál v telefonu. Zákazník zaplatí převodem přes QR kód nebo bitcoinem. Bez provizí, bez serveru, data zůstávají ve vašich zařízeních.",
     socialDescription:
       "Telefon jako platební terminál. Převodem přes QR kód nebo bitcoinem, bez provizí a bez serveru.",
-    imageAlt: "Platit prosím: telefon s platebním terminálem a QR kódem",
+    imageAlt: "fazole.fit: telefon s platebním terminálem a QR kódem",
     ogLocale: "cs_CZ",
   },
   nav: {
-    home: "Platit prosím, úvod",
+    home: "fazole.fit, úvod",
     howItWorks: "Jak to funguje",
     team: "Zaměstnanci",
     comparison: "Srovnání",
@@ -152,34 +152,34 @@ export const cs = {
   comparison: {
     eyebrow: "Srovnání",
     title: "Proč ne karetní terminál?",
-    body: "Karetní terminál si z každé platby vezme procenta a potřebuje vlastní hardware. U Platit prosím odpadá obojí.",
+    body: "Karetní terminál si z každé platby vezme procenta a potřebuje vlastní hardware. U fazole.fit odpadá obojí.",
     cardTerminal: "Karetní terminál",
-    platitProsim: "Platit prosím",
+    fazole: "fazole.fit",
     rows: [
       {
         label: "Poplatek z platby",
         cardTerminal: "1–2 % z každé platby",
-        platitProsim: "Převodem 0 Kč, bitcoinem pár satoshi",
+        fazole: "Převodem 0 Kč, bitcoinem pár satoshi",
       },
       {
         label: "Hardware",
         cardTerminal: "Terminál ke koupi nebo pronájmu",
-        platitProsim: "Telefon, který už máte",
+        fazole: "Telefon, který už máte",
       },
       {
         label: "Měsíční paušál",
         cardTerminal: "Často ano",
-        platitProsim: "Žádný",
+        fazole: "Žádný",
       },
       {
         label: "Smlouva",
         cardTerminal: "S bankou nebo poskytovatelem",
-        platitProsim: "Žádná, stačí otevřít aplikaci",
+        fazole: "Žádná, stačí otevřít aplikaci",
       },
       {
         label: "Vaše data",
         cardTerminal: "U poskytovatele",
-        platitProsim: "Jen ve vašich zařízeních",
+        fazole: "Jen ve vašich zařízeních",
       },
     ] satisfies ComparisonRow[],
     note: "Karty zatím nepřijímáme: zákazník potřebuje bankovní aplikaci nebo bitcoinovou peněženku.",
@@ -187,7 +187,7 @@ export const cs = {
   privacy: {
     eyebrow: "Soukromí",
     title: "Žádný účet. Žádný server. Vaše data.",
-    body: "Platit prosím je local-first. Všechno se ukládá ve vašem telefonu a mezi vašimi zařízeními se synchronizuje šifrovaně přes Evolu.",
+    body: "fazole.fit je local-first. Všechno se ukládá ve vašem telefonu a mezi vašimi zařízeními se synchronizuje šifrovaně přes Evolu.",
     points: points([
       {
         icon: "User",
@@ -243,11 +243,16 @@ export const cs = {
       {
         question: "Funguje to i na tabletu nebo počítači?",
         answer:
-          "Ano. Platit prosím je webová aplikace, kterou si z prohlížeče nainstalujete na telefon, tablet i počítač.",
+          "Ano. fazole.fit je webová aplikace, kterou si z prohlížeče nainstalujete na telefon, tablet i počítač.",
       },
       {
         question: "Je to open source?",
         answer: "Ano, celý zdrojový kód najdete na GitHubu.",
+      },
+      {
+        question: "Proč zrovna fazole?",
+        answer:
+          "Fazole se říkalo prvním online penězům na českém internetu. Na ně navazujeme: peníze, které jdou z ruky do ruky bez prostředníka. A s fazolemi se počítá snadno.",
       },
     ] satisfies FaqItem[],
   },

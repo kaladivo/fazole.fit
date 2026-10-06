@@ -9,7 +9,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./fonts.css": "./fonts/plus-jakarta-sans/plus-jakarta-sans.css",
+    "./fonts.css": "./fonts/fonts.css",
     "./tokens": "./src/tokens.ts",
     "./vite": "./vite.ts"
   },

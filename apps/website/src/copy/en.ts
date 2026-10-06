@@ -3,16 +3,16 @@ import type { SiteCopy } from "./cs";
 
 export const en: SiteCopy = {
   meta: {
-    title: "Platit prosím – QR payments with no commission",
+    title: "fazole.fit – QR payments with no commission",
     description:
       "A payment terminal on your phone. Customers pay by bank transfer via a QR code or with Bitcoin. No commission, no server, your data stays on your devices.",
     socialDescription:
       "Your phone as a payment terminal. By bank transfer via a QR code or with Bitcoin, with no commission and no server.",
-    imageAlt: "Platit prosím: a phone with a payment terminal and a QR code",
+    imageAlt: "fazole.fit: a phone with a payment terminal and a QR code",
     ogLocale: "en_US",
   },
   nav: {
-    home: "Platit prosím, home",
+    home: "fazole.fit, home",
     howItWorks: "How it works",
     team: "Employees",
     comparison: "Comparison",
@@ -134,34 +134,34 @@ export const en: SiteCopy = {
   comparison: {
     eyebrow: "Comparison",
     title: "Why not a card terminal?",
-    body: "A card terminal takes a percentage of every payment and needs its own hardware. Platit prosím needs neither.",
+    body: "A card terminal takes a percentage of every payment and needs its own hardware. fazole.fit needs neither.",
     cardTerminal: "Card terminal",
-    platitProsim: "Platit prosím",
+    fazole: "fazole.fit",
     rows: [
       {
         label: "Fee per payment",
         cardTerminal: "1–2 % of every payment",
-        platitProsim: "CZK 0 by bank, a few sats for Bitcoin",
+        fazole: "CZK 0 by bank, a few sats for Bitcoin",
       },
       {
         label: "Hardware",
         cardTerminal: "A terminal to buy or rent",
-        platitProsim: "The phone you already have",
+        fazole: "The phone you already have",
       },
       {
         label: "Monthly fee",
         cardTerminal: "Often",
-        platitProsim: "None",
+        fazole: "None",
       },
       {
         label: "Contract",
         cardTerminal: "With a bank or a provider",
-        platitProsim: "None, just open the app",
+        fazole: "None, just open the app",
       },
       {
         label: "Your data",
         cardTerminal: "With the provider",
-        platitProsim: "Only on your devices",
+        fazole: "Only on your devices",
       },
     ],
     note: "We don't take cards yet: the customer needs a banking app or a Bitcoin wallet.",
@@ -169,7 +169,7 @@ export const en: SiteCopy = {
   privacy: {
     eyebrow: "Privacy",
     title: "No account. No server. Your data.",
-    body: "Platit prosím is local-first. Everything is stored on your phone and synced between your devices with end-to-end encryption through Evolu.",
+    body: "fazole.fit is local-first. Everything is stored on your phone and synced between your devices with end-to-end encryption through Evolu.",
     points: points([
       {
         icon: "User",
@@ -225,11 +225,16 @@ export const en: SiteCopy = {
       {
         question: "Does it work on a tablet or a computer?",
         answer:
-          "Yes. Platit prosím is a web app that you install from the browser on a phone, a tablet or a computer.",
+          "Yes. fazole.fit is a web app that you install from the browser on a phone, a tablet or a computer.",
       },
       {
         question: "Is it open source?",
         answer: "Yes, all of the source code is on GitHub.",
+      },
+      {
+        question: "Why beans?",
+        answer:
+          "Fazole (beans) was the name of the first online money on the Czech internet. We follow on from it: money that goes from hand to hand with no middleman. And beans are easy to count.",
       },
     ],
   },

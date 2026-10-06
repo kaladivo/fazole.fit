@@ -1,4 +1,4 @@
-import { themes } from "@platitprosim/ui/tokens";
+import { brandMark, themes } from "@platitprosim/ui/tokens";
 import { platitprosimUi } from "@platitprosim/ui/vite";
 import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
@@ -15,8 +15,8 @@ export default defineConfig({
       // sqlite3.wasm is precached too, so Evolu opens its database offline.
       workbox: { globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2,wasm}"] },
       manifest: {
-        name: "Platit prosím",
-        short_name: "Platit prosím",
+        name: "fazole.fit",
+        short_name: "fazole.fit",
         description: "Platební terminál pro české obchodníky",
         lang: "cs",
         id: "/",
@@ -24,7 +24,7 @@ export default defineConfig({
         start_url: "/",
         display: "standalone",
         background_color: themes.dark.background,
-        theme_color: "#4f46e5",
+        theme_color: brandMark.color,
       },
     }),
   ],

@@ -93,14 +93,14 @@ const buttonSizes = {
   md: {
     height: "$control",
     padding: "$xl",
-    radius: "$control",
+    radius: "$pill",
     text: "label",
     icon: "md",
   },
   lg: {
     height: "$controlLg",
     padding: "$xxl",
-    radius: "$control",
+    radius: "$pill",
     text: "title",
     icon: "lg",
   },

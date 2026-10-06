@@ -1,5 +1,5 @@
 export const cs = {
-  appName: "Platit prosím",
+  appName: "fazole.fit",
   appTagline: "Platební terminál pro QR platby bankou i bitcoinem.",
   loading: "Načítám…",
   back: "Zpět",

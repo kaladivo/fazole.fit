@@ -6,6 +6,7 @@ import {
   Stack,
   Text,
   useMedia,
+  Wordmark,
 } from "@platitprosim/ui";
 import { border } from "@platitprosim/ui/tokens";
 import { siteConfig } from "../config";
@@ -61,9 +62,7 @@ export function SiteHeader() {
       >
         <Row render={<a href="#top" aria-label={nav.home} />} gap="$sm">
           <BrandMark size="controlSm" />
-          <Text variant="title" color="$colorStrong">
-            Platit prosím
-          </Text>
+          <Wordmark />
         </Row>
         {wide ? (
           <Row render="nav" gap="$xxl">

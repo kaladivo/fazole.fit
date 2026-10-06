@@ -1,7 +1,7 @@
 import type { cs } from "./cs";
 
 export const en: Record<keyof typeof cs, string> = {
-  appName: "Platit prosím",
+  appName: "fazole.fit",
   appTagline: "A payment terminal for QR payments by bank or bitcoin.",
   loading: "Loading…",
   back: "Back",

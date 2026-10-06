@@ -36,7 +36,7 @@ function TableRow({ row, wide }: { row: ComparisonRow; wide: boolean }) {
   const cells = (
     <>
       <Cell text={row.cardTerminal} ours={false} />
-      <Cell text={row.platitProsim} ours />
+      <Cell text={row.fazole} ours />
     </>
   );
   return (
@@ -101,7 +101,7 @@ export function Comparison() {
                 backgroundColor="$accentSoft"
               >
                 <Text variant="title" color="$accentText">
-                  {comparison.platitProsim}
+                  {comparison.fazole}
                 </Text>
               </Row>
             </Row>

@@ -20,8 +20,8 @@ export type { ScreenProps, SectionProps } from "./layout";
 export { Icon } from "./icons";
 export { icons } from "./icon-set";
 export type { IconName, IconProps, IconSize } from "./icons";
-export { BrandMark } from "./brand-mark";
-export type { BrandMarkProps } from "./brand-mark";
+export { BrandMark, Wordmark } from "./brand-mark";
+export type { BrandMarkProps, WordmarkProps } from "./brand-mark";
 
 // Controls and fields
 export { Button, IconButton, Pressable, SegmentedControl } from "./controls";

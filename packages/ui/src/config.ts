@@ -39,6 +39,16 @@ const body = createFont({
   },
 });
 
+const display = createFont({
+  ...fontScale,
+  family: Platform.OS === "web" ? fontFamily.display : "BricolageGrotesque",
+  // Only the bold weights ship; named after @expo-google-fonts/bricolage-grotesque.
+  face: {
+    700: { normal: "BricolageGrotesque_700Bold" },
+    800: { normal: "BricolageGrotesque_800ExtraBold" },
+  },
+});
+
 const mono = createFont({
   ...fontScale,
   family: Platform.select({
@@ -57,7 +67,7 @@ export const config = createTamagui({
     zIndex: withDefault(zIndex, zIndex.base),
   }),
   themes,
-  fonts: { body, mono },
+  fonts: { body, display, mono },
   animations,
   media: {
     compact: { maxWidth: breakpoint.wide - 1 },
@@ -70,9 +80,9 @@ export const config = createTamagui({
   },
 });
 
-type PlatitProsimConfig = typeof config;
+type FazoleConfig = typeof config;
 
 declare module "tamagui" {
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Tamagui reads the app config through declaration merging.
-  interface TamaguiCustomConfig extends PlatitProsimConfig {}
+  interface TamaguiCustomConfig extends FazoleConfig {}
 }
