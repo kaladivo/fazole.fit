@@ -1,4 +1,5 @@
 import {
+  Avatar,
   Button,
   Card,
   Dialog,
@@ -11,18 +12,35 @@ import {
 import { useState } from "react";
 import { themes, useThemeSetting } from "../colorMode";
 import type { ThemeSetting } from "../colorMode";
-import { appConfig } from "../config";
 import { useI18n } from "../i18n";
 import type { I18nKey } from "../i18n";
 import { navigateTo } from "../routing";
-import { resetDevice, saveSetting, saveShop, useAppEvolu } from "../storage";
+import { shortNpub } from "@platitprosim/core";
+import type { Pubkey } from "@linky-fit/linkstr";
+import { useAppServices, useProfileOf } from "../services";
+import {
+  needsForward,
+  resetDevice,
+  saveSetting,
+  saveShop,
+  useAppEvolu,
+  usePayments,
+  useStoredMembership,
+} from "../storage";
 import type { ShopProfile } from "../storage";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { BackupPhrase } from "./BackupPhrase";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { ShopFields } from "./ShopFields";
 import { useShopForm } from "./shopForm";
 
-type OpenDialog = "shop" | "backupConfirm" | "backup" | "restore" | "reset";
+type OpenDialog =
+  | "shop"
+  | "backupConfirm"
+  | "backup"
+  | "restore"
+  | "reset"
+  | "leave";
 
 const themeLabels: Record<ThemeSetting, I18nKey> = {
   system: "themeSystem",
@@ -37,6 +55,8 @@ export function SettingsScreen({ profile }: { profile: ShopProfile }) {
   const [dialog, setDialog] = useState<OpenDialog | null>(null);
   const close = () => setDialog(null);
   const owner = profile.role === "owner";
+  const membership = useStoredMembership();
+  const forwarding = usePayments().some(needsForward);
 
   return (
     <Screen width="narrow" testID="settings-screen">
@@ -68,6 +88,16 @@ export function SettingsScreen({ profile }: { profile: ShopProfile }) {
           />
         </Card>
       </Section>
+      {!owner && membership?.employeePubkey ? (
+        <Section title={t("settingsLinky")}>
+          <Card paddingVertical="$sm" gap="$none">
+            <LinkyRow
+              pubkey={membership.employeePubkey}
+              name={membership.employeeName}
+            />
+          </Card>
+        </Section>
+      ) : null}
       <Section title={t("settingsSecurity")}>
         <Card paddingVertical="$sm" gap="$none">
           <ListRow
@@ -82,13 +112,27 @@ export function SettingsScreen({ profile }: { profile: ShopProfile }) {
             title={t("settingsRestore")}
             onPress={() => setDialog("restore")}
           />
-          <ListRow
-            testID="settings-reset"
-            icon="Trash2"
-            title={t("settingsReset")}
-            destructive
-            onPress={() => setDialog("reset")}
-          />
+          {owner ? (
+            <ListRow
+              testID="settings-reset"
+              icon="Trash2"
+              title={t("settingsReset")}
+              destructive
+              onPress={() => setDialog("reset")}
+            />
+          ) : (
+            <ListRow
+              testID="settings-leave"
+              icon="LogOut"
+              title={t("settingsLeave")}
+              description={
+                forwarding ? t("employeeForwardingFunds") : undefined
+              }
+              destructive
+              disabled={forwarding}
+              onPress={() => setDialog("leave")}
+            />
+          )}
         </Card>
       </Section>
       <Section title={t("settingsAbout")}>
@@ -96,7 +140,7 @@ export function SettingsScreen({ profile }: { profile: ShopProfile }) {
           <ListRow
             icon="Bitcoin"
             title={t("settingsMint")}
-            value={new URL(appConfig.mintUrl).host}
+            value={new URL(profile.mintUrl).host}
           />
         </Card>
       </Section>
@@ -139,48 +183,30 @@ export function SettingsScreen({ profile }: { profile: ShopProfile }) {
         destructive
         onConfirm={() => void resetDevice(evolu)}
       />
+      <ConfirmDialog
+        open={dialog === "leave"}
+        onClose={close}
+        title={t("settingsLeaveConfirmTitle", { shop: profile.name })}
+        description={t("settingsLeaveConfirmDescription")}
+        confirm={t("settingsLeaveConfirm")}
+        destructive
+        onConfirm={() => void resetDevice(evolu)}
+      />
     </Screen>
   );
 }
 
-function ConfirmDialog({
-  open,
-  onClose,
-  title,
-  description,
-  confirm,
-  destructive = false,
-  onConfirm,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  description: string;
-  confirm: string;
-  destructive?: boolean;
-  onConfirm: () => void;
-}) {
-  const { t } = useI18n();
+/** The employee's Linky identity this device acts for. */
+function LinkyRow({ pubkey, name }: { pubkey: Pubkey; name: string | null }) {
+  const { profiles } = useAppServices();
+  const profile = useProfileOf(profiles, pubkey);
+  const shown = profile?.name ?? name ?? shortNpub(pubkey);
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => (next ? undefined : onClose())}
-      title={title}
-      description={description}
-      actions={
-        <>
-          <Button
-            testID="confirm-dialog-confirm"
-            variant={destructive ? "danger" : "primary"}
-            onPress={onConfirm}
-          >
-            {confirm}
-          </Button>
-          <Button variant="secondary" onPress={onClose}>
-            {t("cancel")}
-          </Button>
-        </>
-      }
+    <ListRow
+      testID="settings-linky"
+      leading={<Avatar name={shown} uri={profile?.picture ?? undefined} />}
+      title={shown}
+      description={shortNpub(pubkey)}
     />
   );
 }

@@ -347,7 +347,7 @@ describe("LockedToken messages", () => {
     const { wallet } = await setup();
     const fake = fakeNostr();
     const scripted = scriptedReceive(wallet, () => Either.right(receipt(100)));
-    receiveLockedTokens(fake.nostr, scripted.wallet);
+    receiveLockedTokens(createTestEvolu(), fake.nostr, scripted.wallet);
     const [handler] = fake.appMessages;
     if (!handler) throw new Error("no app message handler");
     await handler(

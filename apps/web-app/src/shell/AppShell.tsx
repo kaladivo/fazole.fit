@@ -10,6 +10,8 @@ import {
 import type { NavItem } from "@platitprosim/ui";
 import { Suspense, useEffect } from "react";
 import type { ComponentType } from "react";
+import { holdsEmployeeScreen } from "../employee/employeeFlow";
+import { useEmployeeStep } from "../employee/useEmployeeStep";
 import { useI18n } from "../i18n";
 import type { I18nKey } from "../i18n";
 import {
@@ -80,7 +82,12 @@ const loading = (
 export function AppShell() {
   const route = useRoute();
   const profile = useShopProfile();
-  const resolved = resolveRoute(route, profile?.role ?? null);
+  const employee = useEmployeeStep();
+  const resolved = resolveRoute(
+    route,
+    profile?.role ?? null,
+    holdsEmployeeScreen(employee),
+  );
   useEffect(() => {
     if (resolved !== route) replaceRoute(resolved);
   }, [resolved, route]);

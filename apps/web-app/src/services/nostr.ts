@@ -22,7 +22,7 @@ import type {
 } from "@linky-fit/linkstr";
 import { appMessages } from "@platitprosim/core";
 import type { AppMessage } from "@platitprosim/core";
-import { Cause, Effect, Option, Stream } from "effect";
+import { Cause, Effect, Fiber, Option, Stream } from "effect";
 import type { LinkstrRuntime } from "./runtimes";
 
 /** A first session with no stored cursor reads this far back. */
@@ -55,7 +55,13 @@ export interface Nostr {
   readonly nprofile: string;
   readonly run: <A, E>(
     effect: Effect.Effect<A, E, LinkstrServices>,
+    options?: { readonly signal?: AbortSignal },
   ) => Promise<A>;
+  /** Runs a long-lived effect, such as a watch, until the returned stop is called. */
+  readonly fork: (
+    effect: Effect.Effect<unknown, unknown, LinkstrServices>,
+    label: string,
+  ) => () => void;
   /** Queues an app message; the outbox retries it until a relay takes it. */
   readonly sendAppMessage: (
     to: Pubkey,
@@ -184,7 +190,13 @@ export const createNostr = (
   return {
     pubkey,
     nprofile: encodeNprofile(pubkey, relays),
-    run: (effect) => runtime.runPromise(effect),
+    run: (effect, options) => runtime.runPromise(effect, options),
+    fork: (effect, label) => {
+      const fiber = runtime.runFork(effect.pipe(logDeath(label)));
+      return () => {
+        runtime.runFork(Fiber.interrupt(fiber));
+      };
+    },
     sendAppMessage: (to, message, ref) =>
       enqueue(
         { _tag: "appMessage", draft: appMessages.draft(to, message) },

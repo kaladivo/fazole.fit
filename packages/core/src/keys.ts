@@ -70,3 +70,9 @@ export const parsePubkeyInput = (input: string): Pubkey | null => {
     LINKY_PROFILE_URL.exec(trimmed)?.[1] ?? trimmed.replace(/^nostr:/, "");
   return parsePubkey(value) ?? decodeNprofilePubkey(value);
 };
+
+/** `npub1abcd…wxyz`: enough to recognise a key at a glance. */
+export const shortNpub = (pubkey: Pubkey): string => {
+  const npub = encodeNpub(pubkey);
+  return `${npub.slice(0, 9)}…${npub.slice(-4)}`;
+};

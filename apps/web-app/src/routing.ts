@@ -61,9 +61,16 @@ export const sectionsFor = (role: Role): readonly Section[] =>
  * Where a route lands for this install: without a role only the welcome
  * flows are open, and with one the welcome flows lead to the terminal.
  * Restoring stays open to an owner, who may replace this device's identity.
+ * An employee install waiting for, answering or removed from a shop stays
+ * on the employee screen.
  */
-export const resolveRoute = (route: Route, role: Role | null): Route => {
+export const resolveRoute = (
+  route: Route,
+  role: Role | null,
+  employeePending = false,
+): Route => {
   if (role === null) {
+    if (employeePending) return "employee";
     return route === "setup" ||
       route === "restore" ||
       route === "restoring" ||

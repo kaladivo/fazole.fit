@@ -19,6 +19,11 @@ const payment = (id: string, overrides: Partial<Payment>): Payment => ({
   invoice: null,
   paymentRequest: null,
   czkPerBtc: null,
+  employeeId: null,
+  lockedToken: null,
+  forwardOperationId: null,
+  forwardedAtMs: null,
+  reportedAtMs: null,
   ...overrides,
 });
 

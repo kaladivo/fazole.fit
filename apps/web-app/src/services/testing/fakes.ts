@@ -34,6 +34,7 @@ export const fakeNostr = (overrides: Partial<Nostr> = {}) => {
     pubkey: Pubkey.make("a".repeat(64)),
     nprofile: "nprofile1test",
     run: () => Promise.reject(new Error("fake nostr")),
+    fork: () => () => {},
     sendAppMessage: () => Promise.reject(new Error("fake nostr")),
     sendToken: () => Promise.reject(new Error("fake nostr")),
     publishName: () => Promise.resolve(),

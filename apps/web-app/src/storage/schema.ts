@@ -35,12 +35,27 @@ export const InboxCursorId = id("InboxCursor");
 export type InboxCursorId = InferType<typeof InboxCursorId>;
 export const WithdrawalId = id("Withdrawal");
 export type WithdrawalId = InferType<typeof WithdrawalId>;
+export const EmployeeDeviceId = id("EmployeeDevice");
+export type EmployeeDeviceId = InferType<typeof EmployeeDeviceId>;
+export const EmployeeLoginId = id("EmployeeLogin");
+export type EmployeeLoginId = InferType<typeof EmployeeLoginId>;
+export const ShopOfferId = id("ShopOffer");
+export type ShopOfferId = InferType<typeof ShopOfferId>;
 
 /** One install owns at most one shop and holds at most one membership, so every device converges on one row. */
 export const shopId = createIdFromString<"Shop">("shop");
 export const membershipId = createIdFromString<"Membership">("membership");
+export const employeeLoginId =
+  createIdFromString<"EmployeeLogin">("employeeLogin");
 export const employeeIdFor = (pubkey: string) =>
   createIdFromString<"Employee">(`employee/${pubkey}`);
+export const employeeDeviceIdFor = (pubkey: string) =>
+  createIdFromString<"EmployeeDevice">(`employeeDevice/${pubkey}`);
+export const shopOfferIdFor = (ownerPubkey: string) =>
+  createIdFromString<"ShopOffer">(`shopOffer/${ownerPubkey}`);
+/** An employee payment on the owner: one row per sending device and payment, however often it is reported. */
+export const reportedPaymentIdFor = (device: string, paymentId: string) =>
+  createIdFromString<"Payment">(`payment/${device}/${paymentId}`);
 export const settingIdFor = (key: string) =>
   createIdFromString<"Setting">(`setting/${key}`);
 export const cashuKeyValueIdFor = (key: string) =>
@@ -100,6 +115,37 @@ export const AppSchema = {
     addedAtMs: PositiveInt,
     removedAtMs: nullOr(PositiveInt),
   },
+  /** Owner install: an employee device whose Linky attestation checked out. */
+  employeeDevice: {
+    id: EmployeeDeviceId,
+    employeeId: EmployeeId,
+    // Hex pubkey of the device; its `PaymentRecord`s are trusted.
+    pubkey: NonEmptyString100,
+    linkedAtMs: PositiveInt,
+    // The `ShopConfig` JSON last queued to it, so a changed shop is resent.
+    configSent: nullOr(NonEmptyString),
+    // Its employee was removed: the device is never trusted again, also once they are re-added.
+    revokedAtMs: nullOr(PositiveInt),
+  },
+  /** Employee install: the Linky login waiting for an owner to add it. */
+  employeeLogin: {
+    id: EmployeeLoginId,
+    // Hex pubkey of the employee's Linky identity.
+    employeePubkey: NonEmptyString100,
+    // The signed kind 24138 device authorization, as JSON.
+    attestation: NonEmptyString,
+    createdAtMs: PositiveInt,
+  },
+  /** Employee install: a `ShopConfig` the employee has not answered yet. */
+  shopOffer: {
+    id: ShopOfferId,
+    ownerPubkey: NonEmptyString100,
+    // The `ShopConfig` JSON.
+    config: NonEmptyString,
+    receivedAtMs: PositiveInt,
+    // The employee declined; further configs from this owner are ignored.
+    declinedAtMs: nullOr(PositiveInt),
+  },
   /** The payment history: this device's payments and, on the owner, every employee's. */
   payment: {
     id: PaymentRowId,
@@ -128,7 +174,12 @@ export const AppSchema = {
     czkPerBtc: nullOr(PositiveNumber),
     // Employee: the P2PK token for the owner, kept until it is delivered.
     lockedToken: nullOr(NonEmptyString),
+    // Employee: the linkshu send holding that token.
+    forwardOperationId: nullOr(NonEmptyString1000),
+    // Employee: when the token reached a relay. Owner: when it was received.
     forwardedAtMs: nullOr(PositiveInt),
+    // Employee: the `updatedAtMs` last queued to the owner as a `PaymentRecord`.
+    reportedAtMs: nullOr(PositiveInt),
   },
   /** Owner install: money taken out of the wallet. */
   withdrawal: {

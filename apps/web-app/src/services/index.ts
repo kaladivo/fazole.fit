@@ -11,10 +11,14 @@ export type {
   Nostr,
   OutboxResultHandler,
 } from "./nostr";
+export type { EmployeeLink, LinkFailure } from "./employeeLogin";
+export { useProfileOf } from "./profiles";
+export type { ProfileLookup, ProfileSummary } from "./profiles";
 export { useCzkRate } from "./rates";
 export type { CzkRate } from "./rates";
 export { runtimeConfigFrom } from "./runtimes";
 export type { RuntimeConfig } from "./runtimes";
+export type { ShopTeam } from "./shopTeam";
 export type { Wallet } from "./wallet";
 export { parseLightningTarget } from "./withdrawals";
 export type {

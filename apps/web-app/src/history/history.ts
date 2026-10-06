@@ -1,5 +1,6 @@
 import { CzkAmount } from "@platitprosim/core";
 import type { PaymentStatus } from "@platitprosim/core";
+import type { EmployeeId } from "../storage";
 
 interface DatedPayment {
   readonly createdAtMs: number;
@@ -50,3 +51,39 @@ export const relativeDay = (
   yesterday.setDate(yesterday.getDate() - 1);
   return startMs === yesterday.getTime() ? "yesterday" : null;
 };
+
+/** Everyone, the owner's own payments, or one employee's. */
+export type HistoryFilter = "all" | "me" | EmployeeId;
+
+export const filterPayments = <
+  P extends { readonly employeeId: string | null },
+>(
+  payments: readonly P[],
+  filter: HistoryFilter,
+): P[] =>
+  filter === "all"
+    ? [...payments]
+    : payments.filter((payment) =>
+        filter === "me"
+          ? payment.employeeId === null
+          : payment.employeeId === filter,
+      );
+
+/** The filters worth offering: active employees, and removed ones who still have payments. */
+export const historyFilters = (
+  payments: readonly { readonly employeeId: string | null }[],
+  employees: readonly {
+    readonly id: EmployeeId;
+    readonly removedAtMs: number | null;
+  }[],
+): HistoryFilter[] => [
+  "all",
+  "me",
+  ...employees
+    .filter(
+      (employee) =>
+        employee.removedAtMs === null ||
+        payments.some((payment) => payment.employeeId === employee.id),
+    )
+    .map(({ id }) => id),
+];

@@ -41,7 +41,7 @@ const MembershipRow = Schema.Struct({
 });
 const decodeMembership = Schema.decodeUnknownOption(MembershipRow);
 
-const shopQuery = (evolu: AppEvolu) =>
+export const shopQuery = (evolu: AppEvolu) =>
   evolu.createQuery((db) =>
     db
       .selectFrom("shop")
@@ -62,22 +62,30 @@ const membershipQuery = (evolu: AppEvolu) =>
 /** `null` until the install owns a shop or holds an active membership; the role routes the app. */
 export const useShopProfile = (): ShopProfile | null => {
   const evolu = useAppEvolu();
-  const shop = decodeShop(useQuery(shopQuery(evolu))[0]);
+  const shop = toOwnerProfile(useQuery(shopQuery(evolu))[0]);
   const membership = decodeMembership(useQuery(membershipQuery(evolu))[0]);
-  if (Option.isSome(shop)) {
-    const { mintUrl, ...details } = shop.value;
-    return {
-      role: "owner",
-      ...details,
-      mintUrl: mintUrl ?? appConfig.mintUrl,
-    };
-  }
+  if (shop) return shop;
   if (Option.isSome(membership)) {
     const { shopName, iban, accountDisplay, mintUrl } = membership.value;
     return { role: "employee", name: shopName, iban, accountDisplay, mintUrl };
   }
   return null;
 };
+
+const toOwnerProfile = (row: unknown): ShopProfile | null =>
+  Option.getOrNull(
+    Option.map(decodeShop(row), ({ mintUrl, ...details }) => ({
+      role: "owner" as const,
+      ...details,
+      mintUrl: mintUrl ?? appConfig.mintUrl,
+    })),
+  );
+
+/** The owner's shop, `null` on an employee or a fresh install. */
+export const loadOwnShop = async (
+  evolu: AppEvolu,
+): Promise<ShopProfile | null> =>
+  toOwnerProfile((await evolu.loadQuery(shopQuery(evolu)))[0]);
 
 export interface ShopDetails {
   readonly name: string;

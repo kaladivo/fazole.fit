@@ -1,13 +1,22 @@
+import { OperationId, Tokens } from "@linky-fit/linkshu";
+import { Effect } from "effect";
 import { createContext, use, useContext } from "react";
 import type { AppEvolu, Identity } from "../storage";
 import { createBitcoinPayments } from "./bitcoinPayments";
+import { createEmployeeLink, receiveMembershipMessages } from "./employeeLogin";
+import type { EmployeeLink } from "./employeeLogin";
+import { createEmployeeSync, createSweep } from "./employeeSync";
 import type { BitcoinPayments } from "./bitcoinPayments";
 import { receiveLockedTokens } from "./lockedTokens";
 import { createNostr } from "./nostr";
 import type { Nostr } from "./nostr";
+import { createProfileLookup } from "./profiles";
+import type { ProfileLookup } from "./profiles";
 import { loadCzkPerBtc } from "./rates";
 import { makeLinkshuRuntime, makeLinkstrRuntime } from "./runtimes";
 import type { RuntimeConfig } from "./runtimes";
+import { createShopTeam } from "./shopTeam";
+import type { ShopTeam } from "./shopTeam";
 import { createWallet } from "./wallet";
 import type { Wallet } from "./wallet";
 import { createWithdrawals } from "./withdrawals";
@@ -19,6 +28,11 @@ export interface AppServices {
   readonly wallet: Wallet;
   readonly bitcoinPayments: BitcoinPayments;
   readonly withdrawals: Withdrawals;
+  readonly profiles: ProfileLookup;
+  /** Employee install: the Linky login. */
+  readonly employeeLink: EmployeeLink;
+  /** Owner install: employees' devices and their payments. */
+  readonly team: ShopTeam;
   /** Opens the inbox and resumes interrupted payments; once. */
   readonly start: () => void;
   readonly dispose: () => Promise<void>;
@@ -40,16 +54,35 @@ export const createAppServices = (
     czkPerBtc: loadCzkPerBtc,
   });
   const withdrawals = createWithdrawals({ evolu, nostr, wallet });
-  receiveLockedTokens(nostr, wallet);
+  receiveLockedTokens(evolu, nostr, wallet);
+  receiveMembershipMessages(evolu, nostr);
+  const team = createShopTeam({ evolu, nostr });
+  const employeeSync = createEmployeeSync({
+    evolu,
+    nostr,
+    sweep: createSweep(evolu, wallet),
+    forgetSend: async (operationId) => {
+      await wallet.run(
+        Effect.flatMap(Tokens, (tokens) =>
+          tokens.forget(OperationId.make(operationId)),
+        ),
+      );
+    },
+  });
   return {
     nostr,
     wallet,
     bitcoinPayments,
     withdrawals,
+    profiles: createProfileLookup(nostr),
+    employeeLink: createEmployeeLink({ evolu, nostr, relays: config.relays }),
+    team,
     start: () => {
       nostr.start();
       bitcoinPayments.start();
       withdrawals.start();
+      team.start();
+      employeeSync.start();
     },
     dispose: async () => {
       await Promise.all([linkstr.dispose(), linkshu.dispose()]);

@@ -5,17 +5,19 @@ import {
   cashuRequestMint,
   CzkAmount,
   generateVariableSymbol,
+  PaymentId,
   PaymentMethod,
   PaymentStatus,
   Sats,
   VariableSymbol,
 } from "@platitprosim/core";
-import type { OpenBitcoinPayment } from "@platitprosim/core";
+import type { OpenBitcoinPayment, PaymentRecord } from "@platitprosim/core";
 import type { Pubkey } from "@linky-fit/linkstr";
 import { Option, Schema } from "effect";
 import type { AppEvolu } from "./evolu";
 import { mutation, useAppEvolu } from "./evolu";
-import { PaymentRowId } from "./schema";
+import { reportedPaymentIdFor } from "./schema";
+import type { EmployeeId, PaymentRowId } from "./schema";
 
 const PaymentFields = Schema.Struct({
   amountCzk: CzkAmount,
@@ -31,12 +33,17 @@ const PaymentFields = Schema.Struct({
   invoice: Schema.NullOr(Schema.String),
   paymentRequest: Schema.NullOr(Schema.String),
   czkPerBtc: Schema.NullOr(Schema.Number),
+  employeeId: Schema.NullOr(Schema.String),
+  lockedToken: Schema.NullOr(Schema.String),
+  forwardOperationId: Schema.NullOr(Schema.String),
+  forwardedAtMs: Schema.NullOr(Schema.Int),
+  reportedAtMs: Schema.NullOr(Schema.Int),
 });
 const decodePaymentFields = Schema.decodeUnknownOption(PaymentFields);
 
 export type Payment = typeof PaymentFields.Type & { readonly id: PaymentRowId };
 
-const paymentsQuery = (evolu: AppEvolu) =>
+export const paymentsQuery = (evolu: AppEvolu) =>
   evolu.createQuery((db) =>
     db
       .selectFrom("payment")
@@ -206,4 +213,111 @@ export const cancelPayment = async (
       { onComplete },
     ),
   );
+};
+
+/** The message an employee device sends the owner for the payment's current state. */
+export const paymentRecordOf = (payment: Payment): PaymentRecord => ({
+  v: 1,
+  type: "PaymentRecord",
+  paymentId: PaymentId.make(payment.id),
+  amountCzk: payment.amountCzk,
+  method: payment.method,
+  status: payment.status,
+  createdAt: payment.createdAtMs,
+  updatedAt: payment.updatedAtMs,
+  ...(payment.sats === null ? {} : { sats: payment.sats }),
+  ...(payment.vs === null ? {} : { vs: payment.vs }),
+  ...(payment.paidAtMs === null ? {} : { paidAt: payment.paidAtMs }),
+});
+
+/** Employee: the payment changed since it was last queued to the owner. */
+export const needsReport = (payment: Payment) =>
+  payment.reportedAtMs !== payment.updatedAtMs;
+
+export const markReported = (
+  evolu: AppEvolu,
+  id: PaymentRowId,
+  updatedAtMs: number,
+) =>
+  mutation((onComplete) =>
+    evolu.update("payment", { id, reportedAtMs: updatedAtMs }, { onComplete }),
+  );
+
+/** Employee: Bitcoin received on this device that has not reached the owner yet. */
+export const needsForward = (payment: Payment) =>
+  payment.status === "paid" &&
+  payment.method !== "bank" &&
+  payment.forwardedAtMs === null;
+
+export const attachForward = (
+  evolu: AppEvolu,
+  id: PaymentRowId,
+  forward: { readonly token: string; readonly operationId: string },
+) =>
+  mutation((onComplete) =>
+    evolu.update(
+      "payment",
+      {
+        id,
+        lockedToken: forward.token,
+        forwardOperationId: forward.operationId,
+      },
+      { onComplete },
+    ),
+  );
+
+/** Employee: the token reached a relay. Owner: the token is in the wallet. */
+export const markForwarded = (
+  evolu: AppEvolu,
+  id: PaymentRowId,
+  now = Date.now(),
+) =>
+  mutation((onComplete) =>
+    evolu.update("payment", { id, forwardedAtMs: now }, { onComplete }),
+  );
+
+/** Only a newer state replaces the stored one, so repeated and reordered records converge. */
+export const shouldApplyRecord = (
+  stored: Pick<Payment, "updatedAtMs"> | undefined,
+  record: PaymentRecord,
+) => stored === undefined || record.updatedAt > stored.updatedAtMs;
+
+/** Owner: stores an employee's `PaymentRecord` under that employee unless a newer state is stored. */
+export const upsertReportedPayment = async (
+  evolu: AppEvolu,
+  {
+    device,
+    employeeId,
+    record,
+  }: {
+    readonly device: Pubkey;
+    readonly employeeId: EmployeeId;
+    readonly record: PaymentRecord;
+  },
+): Promise<boolean> => {
+  const id = reportedPaymentIdFor(device, record.paymentId);
+  const stored = (await loadPayments(evolu)).find(
+    (payment) => payment.id === id,
+  );
+  if (!shouldApplyRecord(stored, record)) return false;
+  await mutation((onComplete) =>
+    evolu.upsert(
+      "payment",
+      {
+        id,
+        amountCzk: record.amountCzk,
+        sats: record.sats ?? null,
+        method: record.method,
+        status: record.status,
+        vs: record.vs ?? null,
+        createdAtMs: record.createdAt,
+        updatedAtMs: record.updatedAt,
+        paidAtMs: record.paidAt ?? null,
+        createdBy: device,
+        employeeId,
+      },
+      { onComplete },
+    ),
+  );
+  return true;
 };

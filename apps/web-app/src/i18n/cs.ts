@@ -6,7 +6,6 @@ export const cs = {
   close: "Zavřít",
   cancel: "Zrušit",
   save: "Uložit",
-  comingSoon: "Připravujeme",
 
   welcomeSetupShop: "Založit obchod",
   welcomeSetupShopDescription: "Jsem majitel a chci přijímat platby.",
@@ -61,7 +60,7 @@ export const cs = {
 
   employeeTitle: "Přihlásit se přes Linky",
   employeeDescription:
-    "Majitel obchodu vás přidá podle vašeho profilu v Linky. Přihlášení přes Linky přidáme v příští verzi.",
+    "Přihlaste se svým profilem v Linky. Majitel obchodu vás pak přidá do týmu a toto zařízení začne přijímat platby pro jeho obchod.",
   employeeLogin: "Přihlásit se přes Linky",
 
   navigation: "Hlavní sekce",
@@ -215,4 +214,79 @@ export const cs = {
   paymentCopy: "Klepnutím zkopírujete platební odkaz",
   paymentCopied: "Platební odkaz zkopírován",
   withdrawInvoiceHint: "Faktura na {sats} sat",
+
+  employeesHint:
+    "Zaměstnanec se přihlásí přes Linky na svém zařízení a to se propojí samo.",
+  employeesAddDescription:
+    "Naskenujte QR kód profilu zaměstnance v Linky, nebo vložte jeho npub.",
+  employeesAddSubmit: "Přidat do týmu",
+  employeesAlreadyAdded: "Tento zaměstnanec už v týmu je.",
+  employeesOwnKey: "Tohle je klíč tohoto zařízení.",
+  employeesProfileLoading: "Hledám profil…",
+  employeesProfileMissing: "Profil v Linky bez jména",
+  employeeName: "Jméno",
+  employeeNameHint: "Uvidíte ho v historii plateb.",
+  employeeEdit: "Zaměstnanec",
+  employeeDeviceWaiting: "Čeká na přihlášení",
+  employeeDeviceWaitingHint:
+    "Až se zaměstnanec přihlásí přes Linky na svém zařízení, propojí se samo.",
+  employeeDeviceActive: "Propojeno",
+  employeeDevicesActive: "Propojeno · {count} zařízení",
+  employeeRemove: "Odebrat z týmu",
+  employeeRemoveTitle: "Odebrat {name}?",
+  employeeRemoveDescription:
+    "Jeho zařízení přestane přijímat platby pro váš obchod. Jeho platby v historii zůstanou.",
+  employeeRemoveConfirm: "Odebrat",
+
+  linkApproveTitle: "Potvrďte přihlášení v Linky",
+  linkApproveDescription:
+    "Linky se otevřelo v nové záložce. Potvrďte v něm přihlášení a propojení tohoto zařízení.",
+  linkOpenLinky: "Otevřít Linky",
+  linkOtherDevice: "Máte Linky na jiném telefonu? Naskenujte tento kód.",
+  linkQr: "QR kód pro přihlášení přes Linky",
+  linkCopy: "Kopírovat odkaz",
+  linkCopied: "Odkaz zkopírován",
+  linkWaiting: "Čekám na Linky…",
+  linkFailedTimeout: "Linky neodpovědělo včas",
+  linkFailedRefused: "Linky přihlášení odmítlo",
+  linkFailedUnreachable: "Nedaří se spojit s relayi",
+  linkFailedInvalid: "Linky vrátilo neplatné potvrzení",
+  linkFailedHint: "Zkuste se přihlásit znovu.",
+  employeeLinkyAccount: "Váš účet v Linky",
+  employeeWaitingPill: "Přihlášeno",
+  employeeWaitingTitle: "Čekám, až vás majitel přidá",
+  employeeWaitingDescription:
+    "Požádejte majitele obchodu, ať vás přidá do týmu podle tohoto profilu v Linky.",
+  employeeWaitingCancel: "Zrušit přihlášení",
+  employeePublishFailed: "Majitel vás zatím nevidí",
+  employeePublishFailedHint: "Nepodařilo se spojit s relayi.",
+  employeeJoinTitle: "Připojit se k obchodu {shop}?",
+  employeeJoinDescription:
+    "Platby, které přijmete, půjdou na účet a do peněženky tohoto obchodu.",
+  employeeJoinShop: "Obchod",
+  employeeJoinOwner: "Majitel",
+  employeeJoinAs: "Vaše jméno",
+  employeeJoin: "Připojit se",
+  employeeDecline: "Odmítnout",
+  employeeRemovedTitle: "Majitel vás odebral z obchodu {shop}",
+  employeeRemovedDescription:
+    "Platby, které jste přijali, má majitel ve své historii. Začít znovu vymaže toto zařízení.",
+  employeeRemovedStartOver: "Začít znovu",
+  employeeForwardingFunds: "Posílám zbývající peníze majiteli…",
+
+  historyFilterTitle: "Kdo platbu přijal",
+  historyFilterAll: "Všichni",
+  historyEmployee: "Zaměstnanec",
+  historyFunds: "Peníze",
+  historyFundsOnTheWay: "Na cestě do peněženky",
+  historyFundsReceived: "V peněžence",
+  historyFundsSending: "Posílám majiteli",
+  historyFundsSent: "Poslány majiteli",
+
+  settingsLinky: "Linky",
+  settingsLeave: "Opustit obchod",
+  settingsLeaveConfirmTitle: "Opustit obchod {shop}?",
+  settingsLeaveConfirmDescription:
+    "Toto zařízení se vymaže. Vaše platby zůstanou v historii majitele.",
+  settingsLeaveConfirm: "Opustit",
 };

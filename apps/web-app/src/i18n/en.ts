@@ -8,7 +8,6 @@ export const en: Record<keyof typeof cs, string> = {
   close: "Close",
   cancel: "Cancel",
   save: "Save",
-  comingSoon: "Coming soon",
 
   welcomeSetupShop: "Set up a shop",
   welcomeSetupShopDescription: "I'm the owner and want to take payments.",
@@ -63,7 +62,7 @@ export const en: Record<keyof typeof cs, string> = {
 
   employeeTitle: "Log in with Linky",
   employeeDescription:
-    "Your shop owner adds you using your Linky profile. Logging in with Linky arrives in the next version.",
+    "Log in with your Linky profile. The shop owner then adds you to the team, and this device starts taking payments for their shop.",
   employeeLogin: "Log in with Linky",
 
   navigation: "Main sections",
@@ -213,4 +212,79 @@ export const en: Record<keyof typeof cs, string> = {
   paymentCopy: "Tap to copy the payment link",
   paymentCopied: "Payment link copied",
   withdrawInvoiceHint: "An invoice for {sats} sat",
+
+  employeesHint:
+    "An employee logs in with Linky on their device, and it links by itself.",
+  employeesAddDescription:
+    "Scan the employee's Linky profile QR code, or paste their npub.",
+  employeesAddSubmit: "Add to the team",
+  employeesAlreadyAdded: "This employee is already on the team.",
+  employeesOwnKey: "That is this device's own key.",
+  employeesProfileLoading: "Looking up the profile…",
+  employeesProfileMissing: "Linky profile without a name",
+  employeeName: "Name",
+  employeeNameHint: "Shown in the payment history.",
+  employeeEdit: "Employee",
+  employeeDeviceWaiting: "Waiting for login",
+  employeeDeviceWaitingHint:
+    "Once the employee logs in with Linky on their device, it links by itself.",
+  employeeDeviceActive: "Linked",
+  employeeDevicesActive: "Linked · {count} devices",
+  employeeRemove: "Remove from the team",
+  employeeRemoveTitle: "Remove {name}?",
+  employeeRemoveDescription:
+    "Their devices stop taking payments for your shop. Their payments stay in the history.",
+  employeeRemoveConfirm: "Remove",
+
+  linkApproveTitle: "Approve the login in Linky",
+  linkApproveDescription:
+    "Linky opened in a new tab. Approve the login and the device link there.",
+  linkOpenLinky: "Open Linky",
+  linkOtherDevice: "Linky on another phone? Scan this code.",
+  linkQr: "QR code to log in with Linky",
+  linkCopy: "Copy link",
+  linkCopied: "Link copied",
+  linkWaiting: "Waiting for Linky…",
+  linkFailedTimeout: "Linky did not answer in time",
+  linkFailedRefused: "Linky refused the login",
+  linkFailedUnreachable: "Can't reach the relays",
+  linkFailedInvalid: "Linky returned an invalid approval",
+  linkFailedHint: "Try logging in again.",
+  employeeLinkyAccount: "Your Linky account",
+  employeeWaitingPill: "Logged in",
+  employeeWaitingTitle: "Waiting for the shop owner to add you",
+  employeeWaitingDescription:
+    "Ask the shop owner to add you to the team with this Linky profile.",
+  employeeWaitingCancel: "Cancel the login",
+  employeePublishFailed: "The owner can't see you yet",
+  employeePublishFailedHint: "Could not reach the relays.",
+  employeeJoinTitle: "Join {shop}?",
+  employeeJoinDescription:
+    "Payments you take go to this shop's account and wallet.",
+  employeeJoinShop: "Shop",
+  employeeJoinOwner: "Owner",
+  employeeJoinAs: "Your name",
+  employeeJoin: "Join",
+  employeeDecline: "Decline",
+  employeeRemovedTitle: "You were removed from {shop}",
+  employeeRemovedDescription:
+    "The owner keeps the payments you took in their history. Starting over clears this device.",
+  employeeRemovedStartOver: "Start over",
+  employeeForwardingFunds: "Sending the remaining funds to the owner…",
+
+  historyFilterTitle: "Who took the payment",
+  historyFilterAll: "Everyone",
+  historyEmployee: "Employee",
+  historyFunds: "Funds",
+  historyFundsOnTheWay: "On the way to the wallet",
+  historyFundsReceived: "In the wallet",
+  historyFundsSending: "Sending to the owner",
+  historyFundsSent: "Sent to the owner",
+
+  settingsLinky: "Linky",
+  settingsLeave: "Leave the shop",
+  settingsLeaveConfirmTitle: "Leave {shop}?",
+  settingsLeaveConfirmDescription:
+    "This device will be cleared. Your payments stay in the owner's history.",
+  settingsLeaveConfirm: "Leave",
 };

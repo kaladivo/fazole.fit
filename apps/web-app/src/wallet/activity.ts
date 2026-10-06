@@ -17,7 +17,7 @@ export type WalletActivity =
       readonly withdrawal: Withdrawal;
     };
 
-/** Paid Bitcoin payments and withdrawals, newest first; bank payments never touch the wallet. */
+/** Paid Bitcoin payments in this wallet and withdrawals, newest first; bank payments never touch the wallet. */
 export const walletActivity = (
   payments: readonly Payment[],
   withdrawals: readonly Withdrawal[],
@@ -27,7 +27,9 @@ export const walletActivity = (
     ...payments.flatMap((payment): WalletActivity[] =>
       payment.status === "paid" &&
       payment.method !== "bank" &&
-      payment.sats !== null
+      payment.sats !== null &&
+      // An employee's sats count once they reached this wallet.
+      (payment.employeeId === null || payment.forwardedAtMs !== null)
         ? [
             {
               kind: "payment",

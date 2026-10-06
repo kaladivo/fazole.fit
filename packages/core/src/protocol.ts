@@ -73,3 +73,9 @@ export const appMessages = appMessageChannel(
   AppNamespace.make("platitprosim"),
   AppMessage,
 );
+
+/** The app name a Linky device authorization names; the signer shows it and signs it. */
+export const DEVICE_AUTHORIZATION_APP = "Platit prosím";
+
+/** The NIP-78 `d` tag under which an employee device publishes its authorization. */
+export const EMPLOYEE_DEVICE_IDENTIFIER = "platitprosim:employee-device";
