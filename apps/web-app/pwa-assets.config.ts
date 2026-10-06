@@ -4,7 +4,10 @@ import {
 } from "@vite-pwa/assets-generator/config";
 import { brandMark } from "@platitprosim/ui/tokens";
 
-const tile = { padding: 0, resizeOptions: { background: brandMark.color } };
+const tile = {
+  padding: 0,
+  resizeOptions: { background: brandMark.background },
+};
 
 export default defineConfig({
   headLinkOptions: { preset: "2023" },
@@ -13,5 +16,5 @@ export default defineConfig({
     maskable: { ...minimal2023Preset.maskable, ...tile },
     apple: { ...minimal2023Preset.apple, ...tile },
   },
-  images: ["public/logo.svg"],
+  images: ["public/logo.png"],
 });

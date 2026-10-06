@@ -10,10 +10,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      // Icons, favicon and apple-touch-icon are generated from public/logo.svg (pwa-assets.config.ts).
+      // Icons, favicon and apple-touch-icon are generated from public/logo.png (pwa-assets.config.ts).
       pwaAssets: { config: true, injectThemeColor: false },
       // sqlite3.wasm is precached too, so Evolu opens its database offline.
-      workbox: { globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2,wasm}"] },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,svg,png,webp,ico,woff2,wasm}"],
+      },
       manifest: {
         name: "fazole.fit",
         short_name: "fazole.fit",
@@ -24,7 +26,7 @@ export default defineConfig({
         start_url: "/",
         display: "standalone",
         background_color: themes.dark.background,
-        theme_color: brandMark.color,
+        theme_color: brandMark.background,
       },
     }),
   ],
