@@ -106,7 +106,7 @@ export function AppShell() {
   );
 }
 
-/** Bottom tabs on phones, a navigation rail on wide screens. */
+/** Bottom tabs on phones, a navigation rail on wide screens; the phone terminal is the keypad alone. */
 function Sections({
   section,
   profile,
@@ -149,6 +149,13 @@ function Sections({
           {body}
         </Stack>
       </Row>
+    );
+  }
+  if (section === "terminal") {
+    return (
+      <Stack flex={1} gap="$none">
+        {body}
+      </Stack>
     );
   }
   return (

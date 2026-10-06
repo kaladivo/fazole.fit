@@ -39,6 +39,8 @@ import { methodLabels, statusLabels } from "./paymentLabels";
 
 const toTerminal = () => navigateTo("terminal");
 
+const PAID_DISMISS_MS = 3_000;
+
 type Leg = "bank" | "bitcoin";
 
 /** The customer-facing payment: an SPD QR for the bank, a BIP-321 QR for Lightning and Cashu. */
@@ -97,6 +99,12 @@ function OpenPayment({
   const amount = formatCzkValue(payment.amountCzk, lang);
   const open = payment.status === "pending";
   const paidAgain = paidAgainReceipts(payment, useReceipts());
+  const celebrating = payment.status === "paid" && !openedPaid;
+  useEffect(() => {
+    if (!celebrating) return;
+    const timer = setTimeout(toTerminal, PAID_DISMISS_MS);
+    return () => clearTimeout(timer);
+  }, [celebrating]);
 
   const cancel = async () => {
     await cancelPayment(evolu, payment);
@@ -144,7 +152,7 @@ function OpenPayment({
             {t("paymentCancel")}
           </Button>
         </Stack>
-      ) : openedPaid || payment.status !== "paid" ? (
+      ) : !celebrating ? (
         <Stack gap="$md">
           <StatusBadge
             status={payment.status}
