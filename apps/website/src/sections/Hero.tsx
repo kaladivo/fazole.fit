@@ -38,6 +38,7 @@ export function Hero() {
   const { wide } = useMedia();
   const hero = copy.hero;
   const Columns = wide ? Row : Stack;
+  const titleVariant = wide ? "amount" : "display";
   return (
     <Columns
       gap={wide ? "$huge" : "$xxxl"}
@@ -54,13 +55,13 @@ export function Hero() {
       >
         <Pill label={hero.eyebrow} tone="accent" icon="Smartphone" />
         <Text
-          variant="amount"
+          variant={titleVariant}
           color="$colorStrong"
           role="heading"
           aria-level={1}
         >
           {hero.titleBefore}
-          <Text variant="amount" color="$accent">
+          <Text variant={titleVariant} color="$accent">
             {hero.titleAccent}
           </Text>
           {hero.titleAfter}
