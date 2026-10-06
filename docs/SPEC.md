@@ -98,7 +98,8 @@ Language (cs/en), shop details (owner), backup phrase, restore, and a "reset thi
   - `EmployeeRemoved` (owner → employee device).
   - `PaymentRecord` (employee device → owner): `paymentId`, `amountCzk` (haléře int), `sats?`, `method`, `status`, `vs?`, `createdAt`, `updatedAt`, `paidAt?`.
   - `LockedToken` (employee device → owner): `paymentId`, `token` (P2PK-locked to the owner).
-- Employee attestation: Linky signs, over NIP-46, an event whose content or tags carry the device pubkey. The device publishes it as NIP-78 (kind 30078, `d=platitprosim:employee-device`, `p=<employee pubkey>`), authored by the device key, with the Linky-signed event as content. The owner subscribes to `#p=[active employee pubkeys]` and verifies both signatures and the binding. The exact signed kind depends on what Linky's NIP-46 signer allows. That is decided in the linky PR and recorded here.
+- Employee attestation: over NIP-46, Linky signs a **kind 24138** event with tags exactly `[["linky","device_authorization"],["p",<device pubkey hex>],["app","Platit prosím"]]` and empty content. The nostrconnect URI must request `sign_event:24138` (`DEVICE_AUTHORIZATION_PERMISSION`) and carry `name=Platit prosím`. The device publishes it as NIP-78 (kind 30078, `d=platitprosim:employee-device`, `p=<employee pubkey>`), authored by the device key, with the signed event as content. The owner watches `#p=[active employee pubkeys]` and accepts the event only if `verifyDeviceAuthorization(content)` returns `{author, device, app}` with `device === event author`, `app === "Platit prosím"` and `author` an active employee.
+- Because the attestation is public, any owner who lists the same employee could send that device a `ShopConfig`. The employee device therefore shows "Join <shop name>?" and stores the membership only after the employee confirms.
 
 ## Local dev
 
