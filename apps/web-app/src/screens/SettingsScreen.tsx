@@ -33,13 +33,7 @@ import { LanguageSwitch } from "./LanguageSwitch";
 import { ShopFields } from "./ShopFields";
 import { useShopForm } from "./shopForm";
 
-type OpenDialog =
-  | "shop"
-  | "backupConfirm"
-  | "backup"
-  | "restore"
-  | "reset"
-  | "leave";
+type OpenDialog = "shop" | "backup" | "restore" | "reset" | "leave";
 
 const themeLabels: Record<ThemeSetting, I18nKey> = {
   system: "themeSystem",
@@ -103,7 +97,7 @@ export function SettingsScreen({ profile }: { profile: ShopProfile }) {
             testID="settings-backup"
             icon="KeyRound"
             title={t("settingsBackupPhrase")}
-            onPress={() => setDialog("backupConfirm")}
+            onPress={() => setDialog("backup")}
           />
           <ListRow
             testID="settings-restore"
@@ -147,14 +141,6 @@ export function SettingsScreen({ profile }: { profile: ShopProfile }) {
       {dialog === "shop" ? (
         <EditShopDialog profile={profile} onClose={close} />
       ) : null}
-      <ConfirmDialog
-        open={dialog === "backupConfirm"}
-        onClose={close}
-        title={t("settingsBackupConfirmTitle")}
-        description={t("settingsBackupConfirmDescription")}
-        confirm={t("settingsBackupShow")}
-        onConfirm={() => setDialog("backup")}
-      />
       <Dialog
         open={dialog === "backup"}
         onOpenChange={(open) => (open ? undefined : close())}

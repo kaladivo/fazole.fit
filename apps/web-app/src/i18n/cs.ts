@@ -34,21 +34,36 @@ export const cs = {
 
   backupTitle: "Záložní fráze",
   backupDescription:
-    "Těchto {count} slov je jediná záloha obchodu, jeho historie i peněženky. Napište si je na papír a uložte na bezpečné místo.",
+    "Těchto {count} slov je jediná záloha obchodu, jeho historie i peněženky. Uložte si je do správce hesel, nebo je zkopírujte na bezpečné místo.",
   backupWarning: "Slova nikomu neukazujte. Kdo je zná, má přístup k obchodu.",
   backupWords: "Slova záložní fráze",
   backupWord: "Slovo {position}",
-  backupDone: "Mám je zapsaná",
+  backupShow: "Zobrazit",
+  backupHide: "Skrýt",
+  backupCopy: "Kopírovat",
+  backupCopied: "Fráze je zkopírovaná. Vložte ji na bezpečné místo.",
+  backupCopyFailed: "Frázi se nepodařilo zkopírovat.",
+  backupSave: "Uložit do hesel",
+  backupSaveRequested: "Uložení potvrďte v nabídce prohlížeče.",
+  backupSaveUnavailable:
+    "Tento prohlížeč neumí uložit frázi do správce hesel. Zkopírujte ji.",
+  backupSaveFailed: "Uložení do správce hesel se nepovedlo.",
+  backupDone: "Mám ji uloženou",
   backupLater: "Později",
   backupLaterHint: "Frázi najdete kdykoli v nastavení.",
 
   restoreTitle: "Obnovit ze záložní fráze",
   restoreDescription:
-    "Zadejte {count} slov záložní fráze. Celou frázi můžete vložit do prvního pole.",
+    "Zadejte nebo vložte {count} slov záložní fráze. Správce hesel ji může doplnit sám.",
   restoreReplaceWarning:
     "Obnovou nahradíte obchod na tomto zařízení. Bez jeho záložní fráze ho už nepůjde vrátit.",
   restoreInvalid:
     "Tato slova nejsou platná záložní fráze. Zkontrolujte každé slovo.",
+  restorePaste: "Vložit ze schránky",
+  restorePasteFailed: "Schránku se nepodařilo přečíst. Vložte frázi do pole.",
+  restoreWordCount: "{count}/{total} slov",
+  restoreTooManyWords: "Příliš mnoho slov.",
+  restoreUnknownWords: "Neznámé slovo: {words}",
   restoreSubmit: "Obnovit",
   restoringTitle: "Obnovuji obchod…",
   restoringDescription:
@@ -136,10 +151,6 @@ export const cs = {
   settingsShopEdit: "Upravit údaje obchodu",
   settingsSecurity: "Zabezpečení",
   settingsBackupPhrase: "Záložní fráze",
-  settingsBackupConfirmTitle: "Zobrazit záložní frázi?",
-  settingsBackupConfirmDescription:
-    "Ujistěte se, že vám nikdo nevidí na obrazovku.",
-  settingsBackupShow: "Zobrazit",
   settingsRestore: "Obnovit ze zálohy",
   settingsRestoreConfirmTitle: "Obnovit jiný obchod?",
   settingsRestoreConfirmDescription:

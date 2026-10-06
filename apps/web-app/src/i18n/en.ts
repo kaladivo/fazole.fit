@@ -36,21 +36,37 @@ export const en: Record<keyof typeof cs, string> = {
 
   backupTitle: "Backup phrase",
   backupDescription:
-    "These {count} words are the only backup of the shop, its history and its wallet. Write them down on paper and keep them somewhere safe.",
+    "These {count} words are the only backup of the shop, its history and its wallet. Save them to your password manager, or copy them somewhere safe.",
   backupWarning:
     "Never show the words to anyone. Whoever knows them can access the shop.",
   backupWords: "Backup phrase words",
   backupWord: "Word {position}",
-  backupDone: "I wrote it down",
+  backupShow: "Show",
+  backupHide: "Hide",
+  backupCopy: "Copy",
+  backupCopied: "Phrase copied. Paste it somewhere safe.",
+  backupCopyFailed: "Couldn't copy the phrase.",
+  backupSave: "Save to passwords",
+  backupSaveRequested: "Confirm the save in your browser's prompt.",
+  backupSaveUnavailable:
+    "This browser can't save the phrase to a password manager. Copy it instead.",
+  backupSaveFailed: "Saving to the password manager failed.",
+  backupDone: "I've saved it",
   backupLater: "Later",
   backupLaterHint: "You'll find the phrase in Settings at any time.",
 
   restoreTitle: "Restore from a backup phrase",
   restoreDescription:
-    "Enter the {count} words of your backup phrase. You can paste the whole phrase into the first box.",
+    "Enter or paste the {count} words of your backup phrase. Your password manager can fill it in.",
   restoreReplaceWarning:
     "Restoring replaces the shop on this device. Without its backup phrase it can't be brought back.",
   restoreInvalid: "These words aren't a valid backup phrase. Check each word.",
+  restorePaste: "Paste from clipboard",
+  restorePasteFailed:
+    "Couldn't read the clipboard. Paste the phrase into the field.",
+  restoreWordCount: "{count}/{total} words",
+  restoreTooManyWords: "Too many words.",
+  restoreUnknownWords: "Unknown word: {words}",
   restoreSubmit: "Restore",
   restoringTitle: "Restoring your shop…",
   restoringDescription:
@@ -135,9 +151,6 @@ export const en: Record<keyof typeof cs, string> = {
   settingsShopEdit: "Edit shop details",
   settingsSecurity: "Security",
   settingsBackupPhrase: "Backup phrase",
-  settingsBackupConfirmTitle: "Show the backup phrase?",
-  settingsBackupConfirmDescription: "Make sure nobody can see your screen.",
-  settingsBackupShow: "Show",
   settingsRestore: "Restore from backup",
   settingsRestoreConfirmTitle: "Restore a different shop?",
   settingsRestoreConfirmDescription:

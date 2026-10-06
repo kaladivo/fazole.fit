@@ -130,26 +130,22 @@ export const controls: Section = {
       );
     },
     MnemonicGrid: () => {
-      const [words, setWords] = useState(() =>
-        Array.from({ length: 12 }, () => ""),
-      );
+      const [hidden, setHidden] = useState(true);
       return (
         <UI.Stack gap="$lg">
           <UI.MnemonicGrid
             accessibilityLabel="Backup phrase"
             words={sampleWords}
             wordLabel={(position) => `Word ${position}`}
+            hidden={hidden}
           />
-          <UI.Text variant="label" muted>
-            Editable (paste a whole phrase into any cell):
-          </UI.Text>
-          <UI.MnemonicGrid
-            accessibilityLabel="Enter backup phrase"
-            words={words}
-            onWordsChange={setWords}
-            wordLabel={(position) => `Word ${position}`}
-            invalid={words[1] === "" ? [] : [1]}
-          />
+          <UI.Button
+            variant="secondary"
+            icon={hidden ? "Eye" : "EyeOff"}
+            onPress={() => setHidden((current) => !current)}
+          >
+            {hidden ? "Show" : "Hide"}
+          </UI.Button>
         </UI.Stack>
       );
     },

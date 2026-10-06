@@ -36,10 +36,16 @@ export const loadIdentity = (evolu: AppEvolu): Promise<Identity> => {
 /** The identity of this install; suspends until Evolu has the AppOwner. */
 export const useIdentity = (): Identity => use(loadIdentity(useAppEvolu()));
 
+/** The words of a typed or pasted phrase; commas and line breaks separate them too. */
+export const phraseWords = (phrase: string): string[] =>
+  phrase
+    .toLowerCase()
+    .split(/[\s,;]+/u)
+    .filter((word) => word !== "");
+
 /** Validates a typed backup phrase; `null` when it is not a valid BIP-39 mnemonic. */
 export const parseMnemonic = (phrase: string): Mnemonic | null => {
-  const words = phrase.trim().toLowerCase().split(/\s+/u).join(" ");
-  const mnemonic = Mnemonic.fromUnknown(words);
+  const mnemonic = Mnemonic.fromUnknown(phraseWords(phrase).join(" "));
   return mnemonic.ok ? mnemonic.value : null;
 };
 
