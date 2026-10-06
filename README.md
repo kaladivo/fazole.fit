@@ -60,4 +60,14 @@ Employee login opens Linky at https://nightly.app.linky.fit. Set `VITE_LINKY_URL
 
 ## Deploy
 
-`scripts/deploy.sh web-app` and `scripts/deploy.sh website` build locally and publish to Vercel.
+Vercel builds both apps from `kaladivo/fazole.fit`. Pushes to `main` deploy to
+https://app.fazole.fit and https://fazole.fit; other branches get preview deployments.
+
+The existing Vercel projects use `apps/web-app` and `apps/website` as their root
+directories, with access to source files outside those directories enabled for the
+shared workspace packages. Each app's `vercel.json` defines its Bun install and
+build commands, static output, security headers and cache rules.
+
+Set any `VITE_*` overrides in the project's Vercel environment settings before
+building. Without overrides, both apps use their production defaults. GitHub
+Actions runs code checks and tests on `main` pushes and pull requests.

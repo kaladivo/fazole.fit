@@ -37,4 +37,4 @@ The dev mint's FakeWallet settles nothing by itself (`FAKEWALLET_BRR: "false"`),
 
 ## Deploy
 
-`scripts/deploy.sh web-app` (https://app.fazole.fit) and `scripts/deploy.sh website` (https://fazole.fit). The script builds locally and deploys a prebuilt static output to Vercel.
+Vercel's GitHub integration deploys `main` to https://app.fazole.fit and https://fazole.fit; other branches get previews. Each app's `vercel.json` defines its build and headers. Keep access to source files outside each app's Vercel root directory enabled for workspace packages.
