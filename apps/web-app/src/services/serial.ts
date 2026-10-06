@@ -1,11 +1,12 @@
-/** Runs tasks one after another; a failed task is logged and does not stop the next. */
+/** Runs tasks one after another; a failed task is logged, resolves `undefined` and does not stop the next. */
 export const serialQueue = (label: string) => {
   let queue: Promise<void> = Promise.resolve();
-  return (task: () => Promise<void>): Promise<void> => {
+  return <A>(task: () => Promise<A>): Promise<A | undefined> => {
     const next = queue.then(task).catch((error: unknown) => {
       console.warn(`${label} failed`, error);
+      return undefined;
     });
-    queue = next;
+    queue = next.then(() => undefined);
     return next;
   };
 };

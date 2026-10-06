@@ -1,4 +1,6 @@
+import { TokenTransfer } from "@linky-fit/linkshu";
 import {
+  AppMessageReceipt,
   AppMessageReceived,
   ClientId,
   EnqueueReceipt,
@@ -6,25 +8,31 @@ import {
   NostrTransport,
   OutboxJobFailed,
   OutboxJobId,
+  OutboxJobSucceeded,
   OutboxRef,
   Pubkey,
   RelayUrl,
   RumorId,
   UnixSeconds,
+  WrapDelivery,
+  WrapId,
 } from "@linky-fit/linkstr";
 import type { OutboxResult } from "@linky-fit/linkstr";
 import { FakeRelay, makeIdentity, poolFor } from "@linky-fit/linkstr/testing";
-import { Layer } from "effect";
+import { Layer, Schema } from "effect";
 import {
   appMessages,
+  buildCashuRequest,
   CzechIban,
   CzkAmount,
   PaymentId,
+  Sats,
 } from "@platitprosim/core";
 import type { AppMessage, PaymentRecord, ShopConfig } from "@platitprosim/core";
 import { describe, expect, it } from "vitest";
 import {
   addEmployee,
+  attachBitcoinRequest,
   cancelEmployeeLogin,
   completePayment,
   createPayment,
@@ -54,6 +62,7 @@ import { createShopTeam } from "./shopTeam";
 import { fakeNostr } from "./testing/fakes";
 
 const owner = makeIdentity().pubkey;
+const mint = "http://localhost:3348";
 const device = makeIdentity().pubkey;
 const employeeKey = makeIdentity().pubkey;
 
@@ -87,11 +96,30 @@ const shopConfig = (overrides: Partial<ShopConfig> = {}): ShopConfig => ({
   iban: CzechIban.make("CZ6508000000192000145399"),
   accountDisplay: "19-2000145399/0800",
   ownerPubkey: owner,
-  mintUrl: "http://localhost:3348",
+  mintUrl: mint,
   employeeName: "Jana",
   updatedAt: 1_000,
   ...overrides,
 });
+
+/** A send the device's wallet still holds, made `createdAtSec` (by default a minute from now). */
+const pendingSend = (
+  id: string,
+  tokenText: string,
+  sendMint: string,
+  createdAtSec = Math.floor(Date.now() / 1000) + 60,
+) =>
+  Schema.decodeUnknownSync(TokenTransfer)({
+    id,
+    kind: "send",
+    status: "pending",
+    tokenText,
+    mint: sendMint,
+    unit: "sat",
+    amount: 100,
+    error: null,
+    createdAt: createdAtSec,
+  });
 
 const receipt = (ref: string) =>
   new EnqueueReceipt({
@@ -324,24 +352,56 @@ describe("ShopConfig and EmployeeRemoved on an employee device", () => {
 });
 
 describe("employee sync", () => {
+  /** A member device whose wallet holds a pending send for every token a sweep made, until it is forgotten. */
   const member = async (sweeps: SweepResult[]) => {
     const evolu = createTestEvolu();
     await saveMembership(evolu, shopConfig(), employeeKey);
     const nostr = recordingNostr();
     const sweepCalls: string[] = [];
+    const sends: TokenTransfer[] = [];
     const sweep: Sweep = async (mint) => {
       sweepCalls.push(mint);
       const next = sweeps.shift();
+      if (next && next !== "retry") {
+        sends.push(pendingSend(next.operationId, next.tokenText, mint));
+      }
       return next === undefined ? "retry" : next;
     };
     const sync = createEmployeeSync({
       evolu,
       nostr: nostr.nostr,
       sweep,
-      forgetSend: async () => {},
+      forgetSend: async (operationId) => {
+        sends.splice(
+          sends.findIndex(({ id }) => id === operationId),
+          1,
+        );
+      },
+      pendingSends: async () => sends,
     });
-    return { evolu, sync, sweepCalls, ...nostr };
+    return { evolu, sync, sweepCalls, sends, ...nostr };
   };
+
+  const succeeded = (operationId: string) =>
+    new OutboxJobSucceeded({
+      jobId: OutboxJobId.make("j"),
+      ref: OutboxRef.make(`forward:${operationId}`),
+      receipt: new AppMessageReceipt({
+        rumorId: RumorId.make("ef".repeat(32)),
+        clientId: ClientId.make("c"),
+        sentAt: UnixSeconds.make(1_700_000_000),
+        recipientCopy: new WrapDelivery({
+          wrapId: WrapId.make("ab".repeat(32)),
+          acceptedBy: [RelayUrl.make("wss://relay.test")],
+          rejectedBy: [],
+        }),
+      }),
+    });
+
+  const lockedTokens = (sent: { message: AppMessage }[]) =>
+    sent.flatMap(({ message }) =>
+      message.type === "LockedToken" ? [message] : [],
+    );
 
   const paidLightning = async (evolu: AppEvolu) => {
     const id = await createPayment(evolu, {
@@ -405,6 +465,7 @@ describe("employee sync", () => {
       forgetSend: async (operationId) => {
         forgotten.push(operationId);
       },
+      pendingSends: async () => [],
     });
     nostr.start();
     const id = await paidLightning(evolu);
@@ -430,11 +491,111 @@ describe("employee sync", () => {
       message: {
         v: 1,
         type: "LockedToken",
-        paymentId: id,
+        paymentIds: [id],
         token: "cashuBlocked",
       },
-      ref: `forward:${id}`,
+      ref: "forward:send-1",
     });
+  });
+
+  it("names every payment one sweep carried, and marks them all once a relay took it", async () => {
+    const { evolu, sync, sent, finish, sweepCalls } = await member([
+      { tokenText: "cashuBoth", operationId: "send-1" },
+    ]);
+    const first = await paidLightning(evolu);
+    const second = await paidLightning(evolu);
+    await sync.sync(true);
+    expect(sweepCalls).toHaveLength(1);
+    expect(lockedTokens(sent)).toEqual([
+      {
+        v: 1,
+        type: "LockedToken",
+        paymentIds: [first, second],
+        token: "cashuBoth",
+      },
+    ]);
+    await finish(succeeded("send-1"));
+    for (const id of [first, second]) {
+      expect((await paymentOf(evolu, id))?.forwardedAtMs).not.toBeNull();
+    }
+  });
+
+  it("sweeps the mint the payment was paid at", async () => {
+    const { evolu, sync, sweepCalls } = await member([
+      { tokenText: "cashuB", operationId: "send-1" },
+    ]);
+    const id = await createPayment(evolu, {
+      amountCzk: CzkAmount.make(2_500),
+      createdBy: device,
+    });
+    await attachBitcoinRequest(evolu, id, {
+      sats: Sats.make(100),
+      czkPerBtc: 2_500_000,
+      quoteId: "quote-1",
+      invoice: "lnbc1",
+      paymentRequest: buildCashuRequest({
+        sats: Sats.make(100),
+        mintUrl: "https://other-mint.test",
+        deviceNprofile: "nprofile1test",
+        paymentId: id,
+      }),
+    });
+    const payment = await paymentOf(evolu, id);
+    if (!payment) throw new Error("no payment");
+    await completePayment(evolu, payment, "lightning");
+    await sync.sync(true);
+    expect(sweepCalls).toEqual(["https://other-mint.test"]);
+  });
+
+  it("delivers a send a reload cut off from its payment, instead of marking the payment forwarded", async () => {
+    const { evolu, sync, sent, sends, sweepCalls } = await member([null]);
+    const id = await paidLightning(evolu);
+    sends.push(pendingSend("send-1", "cashuOrphan", mint));
+    await sync.sync(true);
+    expect(lockedTokens(sent)).toEqual([
+      {
+        v: 1,
+        type: "LockedToken",
+        paymentIds: [id],
+        token: "cashuOrphan",
+      },
+    ]);
+    expect(await paymentOf(evolu, id)).toMatchObject({
+      lockedToken: "cashuOrphan",
+      forwardOperationId: "send-1",
+      forwardedAtMs: null,
+    });
+    expect(sweepCalls).toEqual([]);
+  });
+
+  it("leaves a payment paid after a cut-off send to a sweep of its own", async () => {
+    const { evolu, sync, sent, sends } = await member([
+      { tokenText: "cashuNew", operationId: "send-2" },
+    ]);
+    sends.push(pendingSend("send-1", "cashuOrphan", mint, 1));
+    const id = await paidLightning(evolu);
+    await sync.sync(true);
+    expect(lockedTokens(sent)).toEqual([
+      { v: 1, type: "LockedToken", paymentIds: [], token: "cashuOrphan" },
+      { v: 1, type: "LockedToken", paymentIds: [id], token: "cashuNew" },
+    ]);
+  });
+
+  it("marks a payment the sweep found nothing for only once no token is on its way", async () => {
+    const { evolu, sync, finish } = await member([
+      { tokenText: "cashuFirst", operationId: "send-1" },
+      null,
+      null,
+    ]);
+    const first = await paidLightning(evolu);
+    await sync.sync(true);
+    const late = await paidLightning(evolu);
+    await sync.sync(false);
+    expect((await paymentOf(evolu, late))?.forwardedAtMs).toBeNull();
+    await finish(succeeded("send-1"));
+    expect((await paymentOf(evolu, first))?.forwardedAtMs).not.toBeNull();
+    await sync.sync(false);
+    expect((await paymentOf(evolu, late))?.forwardedAtMs).not.toBeNull();
   });
 
   it("asks the mint again until the sweep goes through", async () => {
@@ -491,7 +652,7 @@ describe("employee sync", () => {
     await finish(
       new OutboxJobFailed({
         jobId: OutboxJobId.make("j"),
-        ref: OutboxRef.make(`forward:${id}`),
+        ref: OutboxRef.make("forward:send-1"),
         reason: "unexpected-error",
         detail: "boom",
       }),

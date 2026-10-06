@@ -3,16 +3,23 @@ import {
   encodeToken,
   MintUnreachable,
   MintUrl,
+  OperationId,
   ReceiveReceipt,
   TokenAlreadyKnown,
+  TokenTransfer,
 } from "@linky-fit/linkshu";
 import {
   AppMessageReceived,
   AppMessages,
   ChatMessageReceived,
+  ClientId,
+  encodeNpub,
+  EnqueueReceipt,
   LinkstrIdentity,
   makeRelayPoolTransport,
   NostrTransport,
+  OutboxJobId,
+  OutboxRef,
   RelayPolicy,
   RelayUrl,
   RumorId,
@@ -21,6 +28,7 @@ import {
   CashuTokenText,
   UnixSeconds,
 } from "@linky-fit/linkstr";
+import type { Pubkey } from "@linky-fit/linkstr";
 import {
   eventually,
   FakeRelay,
@@ -34,32 +42,45 @@ import {
   appMessages,
   buildCashuRequest,
   CzkAmount,
+  parseCzechAccount,
   PaymentId,
   Sats,
 } from "@platitprosim/core";
-import type { AppMessage } from "@platitprosim/core";
+import type { AppMessage, DeviceKeys } from "@platitprosim/core";
 import { Effect, Either, Layer, Schema } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  addEmployee,
   attachBitcoinRequest,
+  clearBitcoinRequest,
+  completePayment,
   createPayment,
   createWithdrawal,
+  linkEmployeeDevice,
+  loadEmployees,
   loadIdentity,
   loadPayments,
   loadWithdrawals,
+  saveShop,
+  upsertReportedPayment,
 } from "../storage";
 import type { AppEvolu } from "../storage";
+import { makeEvoluOutboxStore } from "../storage/linkstr";
 import { createTestEvolu } from "../storage/testing/testEvolu";
 import { createBitcoinPayments } from "./bitcoinPayments";
 import { receiveLockedTokens } from "./lockedTokens";
 import { createNostr } from "./nostr";
+import type { Nostr } from "./nostr";
 import { makeLinkshuRuntime, makeLinkstrRuntime } from "./runtimes";
+import type { LinkstrRuntime } from "./runtimes";
 import {
   fakeNostr,
   memoryWalletStores,
   scriptedReceive,
 } from "./testing/fakes";
+import { walletActivity } from "../wallet/activity";
 import { createWallet } from "./wallet";
+import type { Wallet } from "./wallet";
 import { createWithdrawals, parseLightningTarget } from "./withdrawals";
 
 const mint = "http://localhost:3348";
@@ -143,6 +164,17 @@ const pendingBitcoinPayment = async (evolu: AppEvolu) => {
 
 const paymentById = async (evolu: AppEvolu, id: string) =>
   (await loadPayments(evolu)).find((payment) => payment.id === id);
+
+/** The NUT-18 payload a non-Linky wallet sends for the request `id`. */
+const nut18Payload = (id: string) =>
+  JSON.stringify({
+    id,
+    mint,
+    unit: "sat",
+    proofs: [{ id: "00ad268c4d1f5826", amount: 100, secret: "s", C: "02" }],
+  });
+
+const receiveId = OperationId.make("receive-1");
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -252,10 +284,13 @@ describe("BitcoinPayments.request", () => {
 });
 
 describe("tokens sent to the device", () => {
-  const withHandler = async (answer: Parameters<typeof scriptedReceive>[1]) => {
+  const withHandler = async (
+    answer: Parameters<typeof scriptedReceive>[1],
+    overrides: Partial<Wallet> = {},
+  ) => {
     const { evolu, wallet } = await setup();
     const fake = fakeNostr();
-    const scripted = scriptedReceive(wallet, answer);
+    const scripted = scriptedReceive(wallet, answer, overrides);
     createBitcoinPayments({
       evolu,
       nostr: fake.nostr,
@@ -288,22 +323,71 @@ describe("tokens sent to the device", () => {
     const { evolu, handler, id } = await withHandler(() =>
       Either.right(receipt(100)),
     );
-    const payload = JSON.stringify({
-      id,
-      mint,
-      unit: "sat",
-      proofs: [{ id: "00ad268c4d1f5826", amount: 100, secret: "s", C: "02" }],
-    });
-    await handler(chatMessage(new TextBody({ text: payload })), "backfill");
+    await handler(
+      chatMessage(new TextBody({ text: nut18Payload(id) })),
+      "backfill",
+    );
     expect((await paymentById(evolu, id))?.status).toBe("paid");
   });
 
-  it("never pays a payment with a replayed token", async () => {
+  it("matches a NUT-18 payload naming a payment whose Lightning quote expired", async () => {
     const { evolu, handler, id } = await withHandler(() =>
-      Either.left(new TokenAlreadyKnown({ operationId: null })),
+      Either.right(receipt(100)),
+    );
+    await clearBitcoinRequest(evolu, id);
+    await handler(
+      chatMessage(new TextBody({ text: nut18Payload(id) })),
+      "backfill",
+    );
+    expect(await paymentById(evolu, id)).toMatchObject({
+      status: "paid",
+      cashuReceiveId: "receive-1",
+    });
+  });
+
+  it("pays the payment a replayed token was received for before a reload", async () => {
+    const { evolu, handler, id } = await withHandler(
+      () => Either.left(new TokenAlreadyKnown({ operationId: receiveId })),
+      { isReceived: async (operationId) => operationId === "receive-1" },
     );
     await handler(
       chatMessage(new TokenBody({ token: CashuTokenText.make(tokenOf(100)) })),
+      "backfill",
+    );
+    expect(await paymentById(evolu, id)).toMatchObject({
+      status: "paid",
+      method: "cashu",
+      cashuReceiveId: "receive-1",
+    });
+  });
+
+  it("never pays a second payment with a replayed token", async () => {
+    const { evolu, handler, id } = await withHandler(
+      () => Either.left(new TokenAlreadyKnown({ operationId: receiveId })),
+      { isReceived: async () => true },
+    );
+    const earlier = await pendingBitcoinPayment(evolu);
+    const paid = await paymentById(evolu, earlier);
+    if (!paid) throw new Error("no payment");
+    await completePayment(evolu, paid, { cashuReceiveId: "receive-1" });
+    await handler(
+      chatMessage(new TokenBody({ token: CashuTokenText.make(tokenOf(100)) })),
+      "backfill",
+    );
+    await handler(
+      chatMessage(new TextBody({ text: nut18Payload(id) })),
+      "backfill",
+    );
+    expect((await paymentById(evolu, id))?.status).toBe("pending");
+  });
+
+  it("never pays a payment with a token the wallet did not receive", async () => {
+    const { evolu, handler, id } = await withHandler(
+      () => Either.left(new TokenAlreadyKnown({ operationId: receiveId })),
+      { isReceived: async () => false },
+    );
+    await handler(
+      chatMessage(new TextBody({ text: nut18Payload(id) })),
       "backfill",
     );
     expect((await paymentById(evolu, id))?.status).toBe("pending");
@@ -336,32 +420,91 @@ describe("tokens sent to the device", () => {
 });
 
 describe("LockedToken messages", () => {
-  const lockedToken: AppMessage = {
+  const lockedToken = (paymentIds: string[]): AppMessage => ({
     v: 1,
     type: "LockedToken",
-    paymentId: PaymentId.make("p1"),
+    paymentIds: paymentIds.map((id) => PaymentId.make(id)),
     token: tokenOf(100),
+  });
+
+  const fromDevice = (from: Pubkey, message: AppMessage) =>
+    new AppMessageReceived({
+      messageId: RumorId.make("cd".repeat(32)),
+      from,
+      app: appMessages.app,
+      content: JSON.stringify(message),
+      clientId: null,
+      sentAt: UnixSeconds.make(1_700_000_000),
+    });
+
+  /** An owner with one employee device that reported two paid Lightning payments. */
+  const ownerWithReports = async () => {
+    const { wallet } = await setup();
+    const evolu = createTestEvolu();
+    const device = makeIdentity().pubkey;
+    await addEmployee(evolu, { pubkey: makeIdentity().pubkey, name: "Jana" });
+    const [employee] = await loadEmployees(evolu);
+    if (!employee) throw new Error("no employee");
+    await linkEmployeeDevice(evolu, {
+      employeeId: employee.id,
+      pubkey: device,
+    });
+    for (const paymentId of ["p1", "p2"]) {
+      await upsertReportedPayment(evolu, {
+        device,
+        employeeId: employee.id,
+        record: {
+          v: 1,
+          type: "PaymentRecord",
+          paymentId: PaymentId.make(paymentId),
+          amountCzk: CzkAmount.make(2_500),
+          sats: Sats.make(50),
+          method: "lightning",
+          status: "paid",
+          createdAt: 1_000,
+          updatedAt: 1_000,
+          paidAt: 1_000,
+        },
+      });
+    }
+    const fake = fakeNostr();
+    const scripted = scriptedReceive(wallet, () => Either.right(receipt(100)));
+    receiveLockedTokens(evolu, fake.nostr, scripted.wallet);
+    const [handler] = fake.appMessages;
+    if (!handler) throw new Error("no app message handler");
+    const deliver = (from: Pubkey, message: AppMessage) =>
+      handler(message, fromDevice(from, message));
+    return { evolu, device, deliver, calls: scripted.calls };
   };
 
   it("receives the token with the device key", async () => {
-    const { wallet } = await setup();
-    const fake = fakeNostr();
-    const scripted = scriptedReceive(wallet, () => Either.right(receipt(100)));
-    receiveLockedTokens(createTestEvolu(), fake.nostr, scripted.wallet);
-    const [handler] = fake.appMessages;
-    if (!handler) throw new Error("no app message handler");
-    await handler(
-      lockedToken,
-      new AppMessageReceived({
-        messageId: RumorId.make("cd".repeat(32)),
-        from: makeIdentity().pubkey,
-        app: appMessages.app,
-        content: JSON.stringify(lockedToken),
-        clientId: null,
-        sentAt: UnixSeconds.make(1_700_000_000),
-      }),
+    const { deliver, calls } = await ownerWithReports();
+    const message = lockedToken(["p1"]);
+    await deliver(makeIdentity().pubkey, message);
+    expect(calls).toEqual([{ text: tokenOf(100), unlock: true }]);
+  });
+
+  it("marks every payment one token carried, so the wallet lists each of them", async () => {
+    const { evolu, device, deliver } = await ownerWithReports();
+    await deliver(device, lockedToken(["p1", "p2"]));
+    const payments = await loadPayments(evolu);
+    expect(payments.map(({ forwardedAtMs }) => forwardedAtMs)).toEqual([
+      expect.any(Number),
+      expect.any(Number),
+    ]);
+    expect(walletActivity(payments, [])).toHaveLength(2);
+  });
+
+  it("creates no payment for an unknown id or sender, but still takes the funds", async () => {
+    const { evolu, device, deliver, calls } = await ownerWithReports();
+    await deliver(device, lockedToken(["unknown"]));
+    await deliver(makeIdentity().pubkey, lockedToken(["p1"]));
+    const payments = await loadPayments(evolu);
+    expect(payments).toHaveLength(2);
+    expect(payments.every(({ forwardedAtMs }) => forwardedAtMs === null)).toBe(
+      true,
     );
-    expect(scripted.calls).toEqual([{ text: lockedToken.token, unlock: true }]);
+    expect(calls).toHaveLength(2);
   });
 });
 
@@ -455,5 +598,122 @@ describe("Nostr", () => {
       })
       .toBe("done");
     await runtime.dispose();
+  });
+});
+
+describe("Linky withdrawals after a reload", () => {
+  const recipient = makeIdentity().pubkey;
+
+  const pendingSend = (id: string, tokenText: string) =>
+    Schema.decodeUnknownSync(TokenTransfer)({
+      id,
+      kind: "send",
+      status: "pending",
+      tokenText,
+      mint,
+      unit: "sat",
+      amount: 100,
+      error: null,
+      createdAt: 1_700_000_000,
+    });
+
+  /** An owner whose wallet holds `sends` and records the ones it returns. */
+  const owner = async (
+    sends: readonly TokenTransfer[],
+    makeNostr: (evolu: AppEvolu, keys: DeviceKeys) => Nostr,
+  ) => {
+    const { evolu, keys, wallet } = await setup();
+    const account = parseCzechAccount("19-2000145399/0800");
+    if (Either.isLeft(account)) throw account.left;
+    await saveShop(evolu, { name: "Kavárna", account: account.right });
+    const nostr = makeNostr(evolu, keys);
+    const returned: string[] = [];
+    const withdrawals = createWithdrawals({
+      evolu,
+      nostr,
+      wallet: {
+        ...wallet,
+        pendingSends: async () => sends,
+        returnSend: async (operationId) => {
+          returned.push(operationId);
+          return true;
+        },
+      },
+    });
+    const linky = (operationId?: string) =>
+      createWithdrawal(evolu, {
+        kind: "linky",
+        target: encodeNpub(recipient),
+        amountSats: 100,
+        ...(operationId ? { operationId } : {}),
+      });
+    return { evolu, nostr, withdrawals, returned, linky };
+  };
+
+  const sends = [
+    pendingSend("send-1", tokenOf(100)),
+    pendingSend("send-2", tokenOf(200)),
+  ];
+
+  it("queues a token a reload kept from the outbox, fails one cut off before its send, and returns a stray send", async () => {
+    const queued: { to: Pubkey; token: string; ref: string }[] = [];
+    const { evolu, withdrawals, returned, linky } = await owner(
+      sends,
+      () =>
+        fakeNostr({
+          sendToken: async (to, token, ref) => {
+            queued.push({ to, token, ref });
+            return new EnqueueReceipt({
+              jobId: OutboxJobId.make(ref),
+              ref: OutboxRef.make(ref),
+              rumorId: RumorId.make("ef".repeat(32)),
+              clientId: ClientId.make(ref),
+              sentAt: UnixSeconds.make(1_700_000_000),
+            });
+          },
+        }).nostr,
+    );
+    const resumed = await linky("send-1");
+    const cutOff = await linky();
+    withdrawals.start();
+    await expect.poll(() => returned).toEqual(["send-2"]);
+    expect(queued).toEqual([
+      { to: recipient, token: tokenOf(100), ref: `withdrawal:${resumed}` },
+    ]);
+    const statusOf = async (id: string) =>
+      (await loadWithdrawals(evolu)).find((withdrawal) => withdrawal.id === id);
+    expect((await statusOf(resumed))?.status).toBe("pending");
+    expect(await statusOf(cutOff)).toMatchObject({
+      status: "failed",
+      error: "Interrupted",
+    });
+  });
+
+  it("does not queue a token the outbox still holds", async () => {
+    const runtimes: LinkstrRuntime[] = [];
+    const { evolu, nostr, withdrawals, returned, linky } = await owner(
+      sends,
+      (ownerEvolu, keys) => {
+        const runtime = makeLinkstrRuntime(ownerEvolu, keys, {
+          relays: [relay],
+          allowInsecureLocalhostRelays: false,
+          transport: Layer.succeed(
+            NostrTransport,
+            makeRelayPoolTransport(
+              poolFor(new Map([[relay, new FakeRelay()]])),
+            ),
+          ),
+        });
+        runtimes.push(runtime);
+        return createNostr(runtime, keys.nostr.pubkey, [relay]);
+      },
+    );
+    const id = await linky("send-1");
+    await nostr.sendToken(recipient, tokenOf(100), `withdrawal:${id}`);
+    withdrawals.start();
+    await expect.poll(() => returned).toEqual(["send-2"]);
+    const jobs = await Effect.runPromise(makeEvoluOutboxStore(evolu).loadAll);
+    expect(jobs.map(({ ref }) => ref)).toEqual([`withdrawal:${id}`]);
+    await Promise.all(runtimes.map((runtime) => runtime.dispose()));
   });
 });

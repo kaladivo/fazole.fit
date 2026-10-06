@@ -12,6 +12,7 @@ import {
   isTrusted,
   linkEmployeeDevice,
   loadEmployeeDevices,
+  loadEmployeeOfDevice,
   loadEmployees,
   loadOwnShop,
   markConfigSent,
@@ -128,17 +129,10 @@ export const createShopTeam = ({
 
   nostr.onAppMessage(async (message, event) => {
     if (message.type !== "PaymentRecord") return;
-    const device = (await loadEmployeeDevices(evolu)).find(
-      ({ pubkey }) => pubkey === event.from,
-    );
-    const employee =
-      device &&
-      (await loadEmployees(evolu)).find(({ id }) => id === device.employeeId);
-    if (!device || !isTrusted(device) || !employee || !isActive(employee)) {
-      return;
-    }
+    const employee = await loadEmployeeOfDevice(evolu, event.from);
+    if (employee === null) return;
     await upsertReportedPayment(evolu, {
-      device: device.pubkey,
+      device: event.from,
       employeeId: employee.id,
       record: message,
     });

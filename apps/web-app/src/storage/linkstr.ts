@@ -89,6 +89,16 @@ export const makeEvoluOutboxStore = (evolu: AppEvolu): OutboxStoreService => {
   };
 };
 
+/** The ref of every job the outbox still holds; a delivered one stays until its result was handled. */
+export const loadOutboxRefs = async (
+  evolu: AppEvolu,
+): Promise<ReadonlySet<string>> =>
+  new Set(
+    (await Effect.runPromise(makeEvoluOutboxStore(evolu).loadAll)).map(
+      ({ ref }) => ref,
+    ),
+  );
+
 /**
  * Every cursor write is synced into the never-rotated app owner's relay quota,
  * so the stored cursor only moves once it is this far behind; a reload then

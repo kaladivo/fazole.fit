@@ -1,4 +1,4 @@
-import { sqliteTrue } from "@evolu/common";
+import { NonEmptyString1000, sqliteTrue } from "@evolu/common";
 import { useQuery } from "@evolu/react";
 import {
   canChangePaymentStatus,
@@ -13,11 +13,12 @@ import {
 } from "@platitprosim/core";
 import type { OpenBitcoinPayment, PaymentRecord } from "@platitprosim/core";
 import type { Pubkey } from "@linky-fit/linkstr";
-import { Option, Schema } from "effect";
+import { Schema } from "effect";
 import type { AppEvolu } from "./evolu";
 import { mutation, useAppEvolu } from "./evolu";
-import { reportedPaymentIdFor } from "./schema";
-import type { EmployeeId, PaymentRowId } from "./schema";
+import { decodeRows } from "./rows";
+import { PaymentRowId, reportedPaymentIdFor } from "./schema";
+import type { EmployeeId } from "./schema";
 
 const PaymentFields = Schema.Struct({
   amountCzk: CzkAmount,
@@ -33,6 +34,7 @@ const PaymentFields = Schema.Struct({
   invoice: Schema.NullOr(Schema.String),
   paymentRequest: Schema.NullOr(Schema.String),
   czkPerBtc: Schema.NullOr(Schema.Number),
+  cashuReceiveId: Schema.NullOr(Schema.String),
   employeeId: Schema.NullOr(Schema.String),
   lockedToken: Schema.NullOr(Schema.String),
   forwardOperationId: Schema.NullOr(Schema.String),
@@ -52,18 +54,9 @@ export const paymentsQuery = (evolu: AppEvolu) =>
       .orderBy("createdAtMs", "desc"),
   );
 
-type PaymentRow = { readonly id: PaymentRowId } & Record<string, unknown>;
-
-/** Rows that have not fully synced yet, or do not validate, are left out. */
-const toPayments = (rows: ReadonlyArray<PaymentRow>): Payment[] =>
-  rows.flatMap((row) =>
-    Option.toArray(
-      Option.map(decodePaymentFields(row), (fields) => ({
-        ...fields,
-        id: row.id,
-      })),
-    ),
-  );
+const toPayments = decodeRows<typeof PaymentFields.Type, PaymentRowId>(
+  decodePaymentFields,
+);
 
 /** Newest first. */
 export const usePayments = (): Payment[] =>
@@ -71,6 +64,63 @@ export const usePayments = (): Payment[] =>
 
 export const loadPayments = async (evolu: AppEvolu): Promise<Payment[]> =>
   toPayments(await evolu.loadQuery(paymentsQuery(evolu)));
+
+const paymentsWhere = (
+  evolu: AppEvolu,
+  column: "quoteId" | "forwardOperationId" | "cashuReceiveId",
+  value: NonEmptyString1000,
+) =>
+  evolu.createQuery((db) =>
+    db
+      .selectFrom("payment")
+      .selectAll()
+      .where(column, "=", value)
+      .where("isDeleted", "is not", sqliteTrue),
+  );
+
+/** The payments whose `column` holds `value`. */
+const loadPaymentsWhere = async (
+  evolu: AppEvolu,
+  column: Parameters<typeof paymentsWhere>[1],
+  value: string,
+): Promise<Payment[]> =>
+  NonEmptyString1000.is(value)
+    ? toPayments(await evolu.loadQuery(paymentsWhere(evolu, column, value)))
+    : [];
+
+export const loadPayment = async (
+  evolu: AppEvolu,
+  id: string,
+): Promise<Payment | null> => {
+  if (!PaymentRowId.is(id)) return null;
+  const rows = await evolu.loadQuery(
+    evolu.createQuery((db) =>
+      db
+        .selectFrom("payment")
+        .selectAll()
+        .where("id", "=", id)
+        .where("isDeleted", "is not", sqliteTrue),
+    ),
+  );
+  return toPayments(rows)[0] ?? null;
+};
+
+export const loadPaymentWithQuote = async (
+  evolu: AppEvolu,
+  quoteId: string,
+): Promise<Payment | null> =>
+  (await loadPaymentsWhere(evolu, "quoteId", quoteId))[0] ?? null;
+
+/** Employee: the payments whose sats a forward's token carries. */
+export const loadPaymentsForwardedBy = (evolu: AppEvolu, operationId: string) =>
+  loadPaymentsWhere(evolu, "forwardOperationId", operationId);
+
+/** The payment a Cashu receive already paid. */
+export const loadPaymentPaidBy = async (
+  evolu: AppEvolu,
+  receiveId: string,
+): Promise<Payment | null> =>
+  (await loadPaymentsWhere(evolu, "cashuReceiveId", receiveId))[0] ?? null;
 
 /** The payment named by a route, `null` while it is unknown. */
 export const usePayment = (id: string): Payment | null => {
@@ -123,7 +173,10 @@ export const attachBitcoinRequest = (
     ),
   );
 
-/** Drops an expired Bitcoin leg, so the payment screen asks for a fresh one. */
+/**
+ * Drops an expired Lightning quote, so the payment screen asks for a fresh
+ * leg. The Cashu request stays payable until then: a wallet may still pay it.
+ */
 export const clearBitcoinRequest = (
   evolu: AppEvolu,
   id: PaymentRowId,
@@ -132,15 +185,7 @@ export const clearBitcoinRequest = (
   mutation((onComplete) =>
     evolu.update(
       "payment",
-      {
-        id,
-        sats: null,
-        czkPerBtc: null,
-        quoteId: null,
-        invoice: null,
-        paymentRequest: null,
-        updatedAtMs: now,
-      },
+      { id, quoteId: null, invoice: null, updatedAtMs: now },
       { onComplete },
     ),
   );
@@ -161,26 +206,28 @@ export const bitcoinRequestOf = (payment: Payment): BitcoinRequest | null =>
       }
     : null;
 
-export type OpenPayment = OpenBitcoinPayment & {
-  readonly payment: Payment;
-  readonly request: BitcoinRequest;
-};
+export type OpenPayment = OpenBitcoinPayment & { readonly payment: Payment };
 
-/** Unpaid payments with a Bitcoin leg a token or a Lightning payment can still settle. */
+/** The mint a payment's Bitcoin leg is payable at, also once its quote expired. */
+export const paymentMintOf = (payment: Payment): string | null =>
+  payment.paymentRequest === null
+    ? null
+    : cashuRequestMint(payment.paymentRequest);
+
+/** Unpaid payments whose Cashu request a token can still settle. */
 export const openBitcoinPayments = (payments: readonly Payment[]) =>
   payments.flatMap((payment): OpenPayment[] => {
-    const request = bitcoinRequestOf(payment);
-    const mintUrl = request && cashuRequestMint(request.paymentRequest);
-    return payment.status === "paid" || !request || !mintUrl
+    const mintUrl = paymentMintOf(payment);
+    return payment.status === "paid" || payment.sats === null || !mintUrl
       ? []
-      : [{ ...payment, mintUrl, sats: request.sats, payment, request }];
+      : [{ ...payment, mintUrl, sats: payment.sats, payment }];
   });
 
-/** Marks the payment paid by `method` when its status still allows it. */
+/** Marks the payment paid when its status still allows it; a Cashu payment names the receive that paid it. */
 export const completePayment = async (
   evolu: AppEvolu,
   payment: Payment,
-  method: PaymentMethod,
+  paidBy: "bank" | "lightning" | { readonly cashuReceiveId: string },
   now = Date.now(),
 ): Promise<boolean> => {
   if (!canChangePaymentStatus(payment.status, "paid")) return false;
@@ -190,7 +237,9 @@ export const completePayment = async (
       {
         id: payment.id,
         status: "paid",
-        method,
+        ...(typeof paidBy === "string"
+          ? { method: paidBy }
+          : { method: "cashu", cashuReceiveId: paidBy.cashuReceiveId }),
         paidAtMs: now,
         updatedAtMs: now,
       },
@@ -296,10 +345,8 @@ export const upsertReportedPayment = async (
   },
 ): Promise<boolean> => {
   const id = reportedPaymentIdFor(device, record.paymentId);
-  const stored = (await loadPayments(evolu)).find(
-    (payment) => payment.id === id,
-  );
-  if (!shouldApplyRecord(stored, record)) return false;
+  const stored = await loadPayment(evolu, id);
+  if (!shouldApplyRecord(stored ?? undefined, record)) return false;
   await mutation((onComplete) =>
     evolu.upsert(
       "payment",

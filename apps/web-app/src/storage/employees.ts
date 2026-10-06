@@ -150,3 +150,18 @@ export const revokeEmployeeDevice = (
 /** A device that may take payments for the shop. */
 export const isTrusted = (device: EmployeeDevice) =>
   device.revokedAtMs === null;
+
+/** The active employee a trusted device belongs to; `null` for any other key. */
+export const loadEmployeeOfDevice = async (
+  evolu: AppEvolu,
+  pubkey: Pubkey,
+): Promise<Employee | null> => {
+  const device = (await loadEmployeeDevices(evolu)).find(
+    (candidate) => candidate.pubkey === pubkey,
+  );
+  if (device === undefined || !isTrusted(device)) return null;
+  const employee = (await loadEmployees(evolu)).find(
+    ({ id }) => id === device.employeeId,
+  );
+  return employee !== undefined && isActive(employee) ? employee : null;
+};

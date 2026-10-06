@@ -17,11 +17,15 @@ import {
   bitcoinRequestOf,
   clearBitcoinRequest,
   completePayment,
+  loadPayment,
+  loadPaymentPaidBy,
   loadPayments,
+  loadPaymentWithQuote,
   openBitcoinPayments,
 } from "../storage";
 import type { AppEvolu, Payment } from "../storage";
 import type { InboxHandler, Nostr } from "./nostr";
+import { serialQueue } from "./serial";
 import type { Wallet } from "./wallet";
 import { isTransientReceiveError } from "./wallet";
 
@@ -63,24 +67,13 @@ export const createBitcoinPayments = ({
   // Topup polling runs in this scope; closing it stops every poll, and the
   // persisted quotes resume in the next scope.
   let scope = Effect.runSync(Scope.make());
-  let queue: Promise<void> = Promise.resolve();
-  const serially = <A>(task: () => Promise<A>): Promise<A> => {
-    const next = queue.then(task);
-    queue = next.then(
-      () => undefined,
-      () => undefined,
-    );
-    return next;
-  };
-
-  const paymentWithQuote = async (quoteId: string) =>
-    (await loadPayments(evolu)).find((payment) => payment.quoteId === quoteId);
+  const serially = serialQueue("bitcoin payments");
 
   const settleTopup = async (
     quote: TopupQuote,
     outcome: Either.Either<TopupReceipt, TopupError>,
   ) => {
-    const payment = await paymentWithQuote(quote.quoteId);
+    const payment = await loadPaymentWithQuote(evolu, quote.quoteId);
     if (Either.isRight(outcome)) {
       if (payment) await completePayment(evolu, payment, "lightning");
       return;
@@ -136,10 +129,8 @@ export const createBitcoinPayments = ({
     shop: { readonly mintUrl: string; readonly name: string },
   ): Promise<BitcoinRequestFailure | null> => {
     // The row read by the caller may predate a request that just landed.
-    const fresh = (await loadPayments(evolu)).find(
-      (stored) => stored.id === payment.id,
-    );
-    if (fresh === undefined || bitcoinRequestOf(fresh) !== null) return null;
+    const fresh = await loadPayment(evolu, payment.id);
+    if (fresh === null || bitcoinRequestOf(fresh) !== null) return null;
     const rate = await czkPerBtc();
     if (rate === null) return "rate-unavailable";
     const mint = parseMintUrl(shop.mintUrl);
@@ -164,6 +155,7 @@ export const createBitcoinPayments = ({
         ),
       ),
     );
+    if (started === undefined) return "mint-unreachable";
     if (Either.isLeft(started)) {
       console.warn("payment quote failed", started.left);
       return "mint-unreachable";
@@ -197,17 +189,29 @@ export const createBitcoinPayments = ({
           : null;
     const incoming = text === null ? null : readIncomingCashu(text);
     if (text === null || incoming === null) return;
-    const received = await wallet.receive(text);
-    if (Either.isLeft(received)) {
-      // Unacknowledged, so the next session receives it again.
-      if (isTransientReceiveError(received.left)) throw received.left;
-      return;
-    }
+    const cashuReceiveId = await unclaimedReceiveOf(text);
+    if (cashuReceiveId === null) return;
     const paid = matchIncomingCashu(
       incoming,
       openBitcoinPayments(await loadPayments(evolu)),
     );
-    if (paid) await completePayment(evolu, paid.payment, "cashu");
+    if (paid) await completePayment(evolu, paid.payment, { cashuReceiveId });
+  };
+
+  /** Receives the text; the receive that holds its sats, `null` when they are not there or already paid a payment. */
+  const unclaimedReceiveOf = async (text: string): Promise<string | null> => {
+    const received = await wallet.receive(text);
+    if (Either.isRight(received)) return received.right.operationId;
+    // Unacknowledged, so the next session receives it again.
+    if (isTransientReceiveError(received.left)) throw received.left;
+    if (received.left._tag !== "TokenAlreadyKnown") return null;
+    // A replay, such as after a reload between receiving and completing the payment.
+    const { operationId } = received.left;
+    return operationId !== null &&
+      (await wallet.isReceived(operationId)) &&
+      (await loadPaymentPaidBy(evolu, operationId)) === null
+      ? operationId
+      : null;
   };
 
   nostr.onInboxEvent(receiveChatToken);

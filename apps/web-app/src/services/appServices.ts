@@ -68,6 +68,7 @@ export const createAppServices = (
         ),
       );
     },
+    pendingSends: wallet.pendingSends,
   });
   return {
     nostr,

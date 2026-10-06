@@ -10,7 +10,7 @@ export {
 } from "./identity";
 export type { Identity } from "./identity";
 export { linkshuStores } from "./linkshu";
-export { linkstrStores } from "./linkstr";
+export { linkstrStores, loadOutboxRefs } from "./linkstr";
 export {
   attachBitcoinRequest,
   attachForward,
@@ -19,12 +19,17 @@ export {
   clearBitcoinRequest,
   completePayment,
   createPayment,
+  loadPayment,
+  loadPaymentPaidBy,
   loadPayments,
+  loadPaymentsForwardedBy,
+  loadPaymentWithQuote,
   markForwarded,
   markReported,
   needsForward,
   needsReport,
   openBitcoinPayments,
+  paymentMintOf,
   paymentRecordOf,
   paymentsQuery,
   shouldApplyRecord,
@@ -40,6 +45,7 @@ export {
   isTrusted,
   linkEmployeeDevice,
   loadEmployeeDevices,
+  loadEmployeeOfDevice,
   loadEmployees,
   markConfigSent,
   markEmployeeRemoved,
@@ -78,6 +84,7 @@ export type {
 } from "./schema";
 export { loadAvailableProofs, useWalletBalance } from "./wallet";
 export {
+  attachWithdrawalSend,
   createWithdrawal,
   finishWithdrawal,
   loadWithdrawals,

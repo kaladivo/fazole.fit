@@ -6,19 +6,22 @@ import {
   Send,
   SendDraft,
 } from "@linky-fit/linkshu";
-import type { MintUrl, P2pkPubkey } from "@linky-fit/linkshu";
+import type { MintUrl, P2pkPubkey, TokenTransfer } from "@linky-fit/linkshu";
+import type { Pubkey } from "@linky-fit/linkstr";
 import { PaymentId } from "@platitprosim/core";
-import { Effect, Either } from "effect";
+import { Array as Arr, Effect, Either } from "effect";
 import {
   attachForward,
   loadAvailableProofs,
   loadPayments,
+  loadPaymentsForwardedBy,
   loadStoredMembership,
   markForwarded,
   markReported,
   membershipRowQuery,
   needsForward,
   needsReport,
+  paymentMintOf,
   paymentRecordOf,
   paymentsQuery,
   watchQueries,
@@ -85,70 +88,137 @@ export const createSweep =
     return "retry";
   };
 
+/** A send holding a token for the owner. */
+interface Forward {
+  readonly operationId: string;
+  readonly tokenText: string;
+}
+
+const forwardOf = ({
+  forwardOperationId,
+  lockedToken,
+}: Payment): Forward | null =>
+  forwardOperationId === null || lockedToken === null
+    ? null
+    : { operationId: forwardOperationId, tokenText: lockedToken };
+
 /**
  * Employee install: reports every change of a payment to the owner, and
  * sweeps Bitcoin the device received to the owner as a P2PK-locked token,
- * so the device never keeps the shop's money.
+ * so the device never keeps the shop's money. A payment counts as forwarded
+ * only once the token carrying its sats reached a relay.
  */
 export const createEmployeeSync = ({
   evolu,
   nostr,
   sweep,
   forgetSend,
+  pendingSends,
 }: {
   readonly evolu: AppEvolu;
   readonly nostr: Nostr;
   readonly sweep: Sweep;
   /** Drops the delivered send from the wallet's books. */
   readonly forgetSend: (operationId: string) => Promise<void>;
+  /** The wallet's undelivered sends; on an employee device each one is a forward. */
+  readonly pendingSends: () => Promise<readonly TokenTransfer[]>;
 }) => {
   const serially = serialQueue("employee sync");
 
-  const queueToken = (
-    payment: Payment,
-    membership: StoredMembership,
-    token: string,
-  ) =>
-    nostr.sendAppMessage(
-      membership.ownerPubkey,
+  /** Forwards queued in this session; the outbox delivers them from here. */
+  const queued = new Set<string>();
+
+  const queue = async (
+    owner: Pubkey,
+    forward: Forward,
+    payments: readonly Payment[],
+  ) => {
+    await nostr.sendAppMessage(
+      owner,
       {
         v: 1,
         type: "LockedToken",
-        paymentId: PaymentId.make(payment.id),
-        token,
+        paymentIds: payments.map(({ id }) => PaymentId.make(id)),
+        token: forward.tokenText,
       },
-      `${FORWARD_REF}${payment.id}`,
+      `${FORWARD_REF}${forward.operationId}`,
     );
-
-  /** `false` when the sweep has to wait for the mint. */
-  const forward = async (
-    payment: Payment,
-    membership: StoredMembership,
-  ): Promise<boolean> => {
-    if (payment.lockedToken !== null) {
-      await queueToken(payment, membership, payment.lockedToken);
-      return true;
-    }
-    const mint = parseMintUrl(membership.mintUrl);
-    const owner = parseP2pkPubkey(membership.ownerPubkey);
-    if (mint === null || owner === null) return false;
-    const swept = await sweep(mint, owner);
-    if (swept === "retry") return false;
-    if (swept === null) {
-      // An earlier sweep already took this payment's sats.
-      await markForwarded(evolu, payment.id);
-      return true;
-    }
-    await attachForward(evolu, payment.id, {
-      token: swept.tokenText,
-      operationId: swept.operationId,
-    });
-    await queueToken(payment, membership, swept.tokenText);
-    return true;
+    queued.add(forward.operationId);
   };
 
-  /** Payments whose token was queued in this session; the outbox delivers it from here. */
-  const queued = new Set<string>();
+  /** Stores the token on every payment whose sats it carries, then queues it. */
+  const deliver = async (
+    owner: Pubkey,
+    forward: Forward,
+    payments: readonly Payment[],
+  ) => {
+    for (const payment of payments) {
+      await attachForward(evolu, payment.id, {
+        token: forward.tokenText,
+        operationId: forward.operationId,
+      });
+    }
+    await queue(owner, forward, payments);
+  };
+
+  const forwardFunds = async (
+    payments: readonly Payment[],
+    membership: StoredMembership,
+    afterRestart: boolean,
+  ) => {
+    const owner = parseP2pkPubkey(membership.ownerPubkey);
+    if (owner === null) return;
+    const waiting = payments.filter(needsForward);
+    // A reload may have come between storing a token and queueing it; the owner receives a repeat once.
+    if (afterRestart) {
+      const stored = Arr.groupBy(
+        waiting.filter((payment) => forwardOf(payment) !== null),
+        (payment) => payment.forwardOperationId ?? "",
+      );
+      for (const carried of Object.values(stored)) {
+        const forward = forwardOf(carried[0]);
+        if (forward && !queued.has(forward.operationId)) {
+          await queue(membership.ownerPubkey, forward, carried);
+        }
+      }
+    }
+    const mintOf = (payment: Payment) =>
+      parseMintUrl(paymentMintOf(payment) ?? membership.mintUrl);
+    let unswept = waiting.filter((payment) => forwardOf(payment) === null);
+    const sends = await pendingSends();
+    const attached = new Set(
+      payments.map(({ forwardOperationId }) => forwardOperationId),
+    );
+    // A send a reload cut off from its payments carries the sats they had by then.
+    for (const send of sends) {
+      if (attached.has(send.id) || queued.has(send.id)) continue;
+      const carried = unswept.filter(
+        (payment) =>
+          mintOf(payment) === send.mint &&
+          (payment.paidAtMs ?? 0) < (send.createdAt + 1) * 1000,
+      );
+      unswept = unswept.filter((payment) => !carried.includes(payment));
+      await deliver(
+        membership.ownerPubkey,
+        { operationId: send.id, tokenText: send.tokenText },
+        carried,
+      );
+    }
+    const byMint = Arr.groupBy(unswept, (payment) => mintOf(payment) ?? "");
+    for (const [mintUrl, carried] of Object.entries(byMint)) {
+      const mint = parseMintUrl(mintUrl);
+      if (mint === null) continue;
+      const swept = await sweep(mint, owner);
+      if (swept === "retry") continue;
+      if (swept !== null) {
+        await deliver(membership.ownerPubkey, swept, carried);
+        continue;
+      }
+      // Nothing left to sweep: the sats went with a token still on its way, which has to arrive first, or were too few to send.
+      if (sends.some((send) => send.mint === mint)) continue;
+      for (const payment of carried) await markForwarded(evolu, payment.id);
+    }
+  };
 
   const sync = (afterRestart: boolean) =>
     serially(async () => {
@@ -166,35 +236,28 @@ export const createEmployeeSync = ({
           await markReported(evolu, payment.id, payment.updatedAtMs);
         }
       }
-      for (const payment of payments) {
-        if (!needsForward(payment) || queued.has(payment.id)) continue;
-        // A token queued before a restart is still in the durable outbox.
-        if (payment.lockedToken !== null && !afterRestart) continue;
-        if (await forward(payment, membership)) queued.add(payment.id);
-      }
+      await forwardFunds(payments, membership, afterRestart);
     });
 
   nostr.onOutboxResult(FORWARD_REF, async (result) => {
-    const id = result.ref.slice(FORWARD_REF.length);
-    const payment = (await loadPayments(evolu)).find(
-      (stored) => stored.id === id,
-    );
-    if (payment === undefined || payment.forwardedAtMs !== null) return;
+    const operationId = result.ref.slice(FORWARD_REF.length);
     if (result._tag === "OutboxJobFailed") {
       console.warn("forward not delivered", result.reason);
-      queued.delete(id);
+      queued.delete(operationId);
       return;
     }
-    await markForwarded(evolu, payment.id);
-    if (payment.forwardOperationId !== null) {
-      await forgetSend(payment.forwardOperationId);
+    for (const payment of await loadPaymentsForwardedBy(evolu, operationId)) {
+      if (payment.forwardedAtMs === null) {
+        await markForwarded(evolu, payment.id);
+      }
     }
+    await forgetSend(operationId);
   });
 
   let started = false;
 
   return {
-    /** One pass; `afterRestart` also queues again tokens a previous session queued. */
+    /** One pass; `afterRestart` also queues again tokens a previous session stored. */
     sync,
     /** Reports and forwards whatever a reload interrupted, then follows every change; once. */
     start: () => {

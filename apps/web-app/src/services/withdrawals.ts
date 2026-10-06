@@ -14,16 +14,20 @@ import {
 } from "@linky-fit/linkshu";
 import type { MeltError, MeltQuote, SendError } from "@linky-fit/linkshu";
 import { parseBip321Uri } from "@linky-fit/linkshu/payment-request";
-import { encodeNpub } from "@linky-fit/linkstr";
+import { decodeNpub, encodeNpub } from "@linky-fit/linkstr";
 import type { Pubkey } from "@linky-fit/linkstr";
 import { Effect, Either } from "effect";
 import {
+  attachWithdrawalSend,
   createWithdrawal,
   finishWithdrawal,
+  loadOutboxRefs,
+  loadOwnShop,
   loadWithdrawals,
 } from "../storage";
 import type { AppEvolu, WithdrawalId } from "../storage";
 import type { Nostr } from "./nostr";
+import { serialQueue } from "./serial";
 import type { Wallet } from "./wallet";
 
 /** Where a Lightning payout goes: an invoice to pay as is, or an address to ask for one. */
@@ -119,22 +123,25 @@ export const createWithdrawals = ({
         withdrawal.status === "pending" && match(withdrawal.quoteId),
     );
 
+  const serially = serialQueue("Linky withdrawal");
+  const refOf = (id: WithdrawalId) => `${LINKY_REF}${id}`;
+
   nostr.onOutboxResult(LINKY_REF, async (result) => {
     const withdrawal = (await loadWithdrawals(evolu)).find(
-      (stored) => `${LINKY_REF}${stored.id}` === result.ref,
+      ({ id }) => refOf(id) === result.ref,
     );
-    if (!withdrawal?.operationId) return;
-    const operationId = OperationId.make(withdrawal.operationId);
+    const operationId = withdrawal?.operationId;
+    if (!withdrawal || !operationId) return;
     if (result._tag === "OutboxJobSucceeded") {
       await wallet.run(
-        Effect.flatMap(Tokens, (tokens) => tokens.forget(operationId)),
+        Effect.flatMap(Tokens, (tokens) =>
+          tokens.forget(OperationId.make(operationId)),
+        ),
       );
       await finishWithdrawal(evolu, withdrawal.id, { status: "done" });
       return;
     }
-    await wallet.run(
-      Effect.flatMap(Tokens, (tokens) => tokens.returnToWallet(operationId)),
-    );
+    await wallet.returnSend(operationId);
     await finishWithdrawal(evolu, withdrawal.id, {
       status: "failed",
       error: result.detail || result.reason,
@@ -159,6 +166,45 @@ export const createWithdrawals = ({
     });
     return Either.left(meltFailure(outcome.left));
   };
+
+  /**
+   * Settles Linky withdrawals a reload interrupted: one whose token never
+   * reached the outbox is queued now, one cut off before its send was linked
+   * fails, and a send no live withdrawal holds goes back to the balance.
+   */
+  const resumeLinky = () =>
+    serially(async () => {
+      // An employee device sends only forwards, which are not withdrawals.
+      if ((await loadOwnShop(evolu)) === null) return;
+      const withdrawals = await loadWithdrawals(evolu);
+      const sends = await wallet.pendingSends();
+      const queued = await loadOutboxRefs(evolu);
+      for (const withdrawal of withdrawals) {
+        if (withdrawal.kind !== "linky" || withdrawal.status !== "pending") {
+          continue;
+        }
+        if (withdrawal.operationId === null) {
+          await finishWithdrawal(evolu, withdrawal.id, {
+            status: "failed",
+            error: "Interrupted",
+          });
+          continue;
+        }
+        const send = sends.find(({ id }) => id === withdrawal.operationId);
+        const to = decodeNpub(withdrawal.target);
+        if (send && to && !queued.has(refOf(withdrawal.id))) {
+          await nostr.sendToken(to, send.tokenText, refOf(withdrawal.id));
+        }
+      }
+      const live = new Set(
+        withdrawals.flatMap(({ status, operationId }) =>
+          status === "failed" ? [] : [operationId],
+        ),
+      );
+      for (const send of sends) {
+        if (!live.has(send.id)) await wallet.returnSend(send.id);
+      }
+    });
 
   return {
     quoteLightning: async (target, amountSats) => {
@@ -214,33 +260,57 @@ export const createWithdrawals = ({
       );
       return settleMelt(id, paid);
     },
-    sendToLinky: async (to, amountSats) => {
-      const source = await wallet.richestMint();
-      if (source === null || source.sats < amountSats) {
-        return "insufficient-funds";
-      }
-      const sent = await wallet.run(
-        Effect.flatMap(Send, (send) =>
-          send.send(
-            new SendDraft({
-              mint: source.mint,
-              amount: Amount.make(amountSats),
-              produceAs: "pending",
-            }),
+    sendToLinky: (to, amountSats) =>
+      serially(async (): Promise<WithdrawFailure | null> => {
+        const source = await wallet.richestMint();
+        if (source === null || source.sats < amountSats) {
+          return "insufficient-funds";
+        }
+        // Stored first, so a reload at any later step leaves a row `resumeLinky` settles.
+        const id = await createWithdrawal(evolu, {
+          kind: "linky",
+          target: encodeNpub(to),
+          amountSats,
+        });
+        const sent = await wallet.run(
+          Effect.flatMap(Send, (send) =>
+            send.send(
+              new SendDraft({
+                mint: source.mint,
+                amount: Amount.make(amountSats),
+                produceAs: "pending",
+              }),
+            ),
           ),
-        ),
-      );
-      if (Either.isLeft(sent)) return meltFailure(sent.left);
-      const id = await createWithdrawal(evolu, {
-        kind: "linky",
-        target: encodeNpub(to),
-        amountSats,
-        operationId: sent.right.operationId,
-      });
-      await nostr.sendToken(to, sent.right.tokenText, `${LINKY_REF}${id}`);
-      return null;
-    },
+        );
+        if (Either.isLeft(sent)) {
+          await finishWithdrawal(evolu, id, {
+            status: "failed",
+            error: sent.left._tag,
+          });
+          return meltFailure(sent.left);
+        }
+        const { operationId, tokenText } = sent.right;
+        await attachWithdrawalSend(evolu, id, operationId);
+        try {
+          await nostr.sendToken(to, tokenText, refOf(id));
+        } catch (error) {
+          console.warn("Linky withdrawal not queued", error);
+          // Still pending if the token stays out; the next start queues it.
+          if (await wallet.returnSend(operationId)) {
+            await finishWithdrawal(evolu, id, {
+              status: "failed",
+              error: "NotQueued",
+            });
+          }
+          return "payment-failed";
+        }
+        return null;
+      }).then((failure) =>
+        failure === undefined ? "payment-failed" : failure,
+      ),
     start: () => {
+      void resumeLinky();
       void wallet
         .run(Effect.flatMap(Melt, (melt) => melt.resumePending))
         .then(async (results) => {

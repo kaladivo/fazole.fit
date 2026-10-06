@@ -52,7 +52,8 @@ export const PaymentRecord = appMessage("PaymentRecord", {
 export type PaymentRecord = typeof PaymentRecord.Type;
 
 export const LockedToken = appMessage("LockedToken", {
-  paymentId: PaymentId,
+  /** Every payment whose sats the token carries; one sweep can take several. */
+  paymentIds: Schema.Array(PaymentId),
   token: Schema.String.pipe(Schema.startsWith("cashu")),
 });
 export type LockedToken = typeof LockedToken.Type;

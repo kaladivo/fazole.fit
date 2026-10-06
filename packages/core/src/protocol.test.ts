@@ -48,7 +48,7 @@ describe("app messages", () => {
     {
       v: 1,
       type: "LockedToken",
-      paymentId: PaymentId.make("pay-1"),
+      paymentIds: [PaymentId.make("pay-1"), PaymentId.make("pay-2")],
       token: "cashuBo2F0gaJhaUgA",
     },
   ])("round-trips $type", (message) => {
@@ -82,7 +82,7 @@ describe("app messages", () => {
     ["VS with leading zero", JSON.stringify({ ...paymentRecord, vs: "0123" })],
     [
       "missing field",
-      JSON.stringify({ v: 1, type: "LockedToken", paymentId: "p" }),
+      JSON.stringify({ v: 1, type: "LockedToken", paymentIds: ["p"] }),
     ],
   ])("rejects %s", (_name, json) => {
     expect(Either.isLeft(decodeAppMessage(json))).toBe(true);

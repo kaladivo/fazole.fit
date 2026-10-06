@@ -195,11 +195,13 @@ describe("bitcoin payments", () => {
       paidAtMs: 3_000,
     });
     expect(openBitcoinPayments([paid])).toEqual([]);
-    expect(await completePayment(evolu, paid, "cashu")).toBe(false);
+    expect(
+      await completePayment(evolu, paid, { cashuReceiveId: "receive-1" }),
+    ).toBe(false);
     expect((await loadPayments(evolu))[0]?.method).toBe("lightning");
   });
 
-  it("lets a cancelled payment still be paid, and drops an expired leg", async () => {
+  it("lets a cancelled payment still be paid, and keeps its Cashu request open past an expired quote", async () => {
     const evolu = createTestEvolu();
     const id = await newPayment(evolu, 2_500, 1_000);
     await attachBitcoinRequest(evolu, id, request(id));
@@ -213,7 +215,9 @@ describe("bitcoin payments", () => {
     const [cleared] = await loadPayments(evolu);
     if (!cleared) throw new Error("no payment");
     expect(bitcoinRequestOf(cleared)).toBeNull();
-    expect(openBitcoinPayments([cleared])).toEqual([]);
+    expect(
+      openBitcoinPayments([cleared]).map(({ id, sats }) => ({ id, sats })),
+    ).toEqual([{ id, sats: 1_336 }]);
   });
 });
 

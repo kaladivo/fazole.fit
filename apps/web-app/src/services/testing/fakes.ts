@@ -60,10 +60,12 @@ export const fakeNostr = (overrides: Partial<Nostr> = {}) => {
 export const scriptedReceive = (
   wallet: Wallet,
   answer: (text: string) => Either.Either<ReceiveReceipt, ReceiveError>,
+  overrides: Partial<Wallet> = {},
 ) => {
   const calls: { text: string; unlock: boolean }[] = [];
   const scripted: Wallet = {
     ...wallet,
+    ...overrides,
     receive: async (text, options) => {
       calls.push({ text, unlock: options?.unlock === true });
       return answer(text);

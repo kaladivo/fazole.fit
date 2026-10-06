@@ -174,9 +174,11 @@ export const AppSchema = {
     paymentRequest: nullOr(NonEmptyString),
     // The rate the sats were priced at.
     czkPerBtc: nullOr(PositiveNumber),
+    // Cashu: the linkshu receive that paid it, so a replay of its token pays nothing else.
+    cashuReceiveId: nullOr(NonEmptyString1000),
     // Employee: the P2PK token for the owner, kept until it is delivered.
     lockedToken: nullOr(NonEmptyString),
-    // Employee: the linkshu send holding that token.
+    // Employee: the linkshu send holding that token; one sweep can carry several payments.
     forwardOperationId: nullOr(NonEmptyString1000),
     // Employee: when the token reached a relay. Owner: when it was received.
     forwardedAtMs: nullOr(PositiveInt),

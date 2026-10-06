@@ -1,4 +1,5 @@
 import {
+  OperationId,
   P2pkUnlockingKey,
   QuoteLockingKey,
   Receive,
@@ -10,6 +11,7 @@ import type {
   MintUrl,
   ReceiveError,
   ReceiveReceipt,
+  TokenTransfer,
 } from "@linky-fit/linkshu";
 import type { DeviceKeys } from "@platitprosim/core";
 import { Effect, Either } from "effect";
@@ -32,6 +34,12 @@ export interface Wallet {
     text: string,
     options?: { readonly unlock?: boolean },
   ) => Promise<Either.Either<ReceiveReceipt, ReceiveError>>;
+  /** Whether `operationId` is a receive that finished, so its sats are in the wallet. */
+  readonly isReceived: (operationId: string) => Promise<boolean>;
+  /** Takes an undelivered send's token back into the balance; `false` when it has to be tried again. */
+  readonly returnSend: (operationId: string) => Promise<boolean>;
+  /** Sends whose token has not been confirmed delivered or taken back. */
+  readonly pendingSends: () => Promise<readonly TokenTransfer[]>;
   /** The mint holding the most sats, which payouts spend from. */
   readonly richestMint: () => Promise<{
     readonly mint: MintUrl;
@@ -52,6 +60,8 @@ export const createWallet = (
   const run: Wallet["run"] = (effect) =>
     runtime.runPromise(Effect.either(effect));
   const unlockingKey = P2pkUnlockingKey.make(keys.nostr.secretKeyHex);
+  const transfers = () =>
+    runtime.runPromise(Effect.flatMap(Tokens, (tokens) => tokens.transfers));
   return {
     runtime,
     run,
@@ -64,6 +74,28 @@ export const createWallet = (
             options?.unlock ? { unlockingKey } : {},
           ),
         ),
+      ),
+    isReceived: async (operationId) =>
+      (await transfers()).some(
+        (transfer) =>
+          transfer.id === operationId &&
+          transfer.kind === "receive" &&
+          transfer.status === "done",
+      ),
+    returnSend: async (operationId) => {
+      const returned = await run(
+        Effect.flatMap(Tokens, (tokens) =>
+          tokens.returnToWallet(OperationId.make(operationId)),
+        ),
+      );
+      if (Either.isLeft(returned)) {
+        console.warn("send not returned", returned.left);
+      }
+      return Either.isRight(returned);
+    },
+    pendingSends: async () =>
+      (await transfers()).filter(
+        (transfer) => transfer.kind === "send" && transfer.status === "pending",
       ),
     richestMint: async () => {
       const balances = await runtime.runPromise(
