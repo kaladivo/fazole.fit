@@ -248,7 +248,7 @@ export const cs = {
       {
         label: "Poplatky",
         cardTerminal: "1–2 % z každé platby",
-        fazole: "Převod podle tarifu vaší banky, bitcoin pár satoshi",
+        fazole: "Tarif vaší banky, bitcoin pár satoshi",
       },
     ] satisfies ComparisonRow[],
     note: "Karty zatím nepřijímáme: zákazník potřebuje bankovní aplikaci nebo bitcoinovou peněženku.",

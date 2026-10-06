@@ -229,7 +229,7 @@ export const en: SiteCopy = {
       {
         label: "Fees",
         cardTerminal: "1–2 % of every payment",
-        fazole: "Your bank's tariff for transfers, a few sats for Bitcoin",
+        fazole: "Your bank's tariff, a few sats for Bitcoin",
       },
     ],
     note: "We don't take cards yet: the customer needs a banking app or a Bitcoin wallet.",
