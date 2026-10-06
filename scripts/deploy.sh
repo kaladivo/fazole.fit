@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Builds an app locally and ships it to Vercel as a prebuilt static deployment.
-# Vercel can't build here yet: linkshu/linkstr are file: deps on a local linky checkout.
 # Usage: scripts/deploy.sh web-app|website
 set -euo pipefail
 

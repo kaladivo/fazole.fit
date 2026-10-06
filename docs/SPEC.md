@@ -2,7 +2,7 @@
 
 A payment terminal for Czech merchants, like qrterminal.cz but local-first. The merchant types an amount and the app shows a QR code. The customer pays by Czech bank transfer (SPD QR), by Lightning, or by Cashu (BIP-321 QR). Shops can have employees. There is no backend: data lives in Evolu, devices talk over Nostr, and money moves through a Cashu mint.
 
-The sibling project `../linky` (`/Users/jarvis/workspace/linky`) is the reference for the stack, its patterns and the UI style. We consume its npm packages `@linky-fit/linkstr` (Nostr) and `@linky-fit/linkshu` (Cashu wallet). While changes to them are in review, the app installs them from a local linky worktree build (`file:` deps).
+The sibling project `../linky` (`/Users/jarvis/workspace/linky`) is the reference for the stack, its patterns and the UI style. We consume its npm packages `@linky-fit/linkstr` (Nostr) and `@linky-fit/linkshu` (Cashu wallet).
 
 ## Stack
 
@@ -29,7 +29,7 @@ The sibling project `../linky` (`/Users/jarvis/workspace/linky`) is the referenc
   - `VITE_NOSTR_RELAYS`
   - `VITE_EVOLU_SERVER_URLS`
   - `VITE_MAIN_MINT_URL`
-  - `VITE_LINKY_URL` (default `https://app.linky.fit`)
+  - `VITE_LINKY_URL` (default `https://nightly.app.linky.fit`)
   - `VITE_ALLOW_INSECURE_LOCALHOST_RELAYS`
 
 ## Roles

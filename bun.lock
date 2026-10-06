@@ -37,8 +37,8 @@
         "@evolu/common": "7.4.1",
         "@evolu/react": "10.4.0",
         "@evolu/web": "2.4.0",
-        "@linky-fit/linkshu": "file:/Users/jarvis/.worktrees/linky-platitprosim/packages/linkshu/dist",
-        "@linky-fit/linkstr": "file:/Users/jarvis/.worktrees/linky-platitprosim/packages/linkstr/dist",
+        "@linky-fit/linkshu": "^0.4.0",
+        "@linky-fit/linkstr": "^0.4.0",
         "@platitprosim/core": "workspace:*",
         "@platitprosim/ui": "workspace:*",
         "effect": "^3.19.19",
@@ -110,8 +110,8 @@
       "name": "@platitprosim/core",
       "version": "0.0.0",
       "dependencies": {
-        "@linky-fit/linkshu": "file:/Users/jarvis/.worktrees/linky-platitprosim/packages/linkshu/dist",
-        "@linky-fit/linkstr": "file:/Users/jarvis/.worktrees/linky-platitprosim/packages/linkstr/dist",
+        "@linky-fit/linkshu": "^0.4.0",
+        "@linky-fit/linkstr": "^0.4.0",
         "@noble/hashes": "^2.0.1",
         "@scure/bip32": "^2.0.1",
         "@scure/bip39": "^2.0.1",
@@ -566,6 +566,10 @@
     "@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.5.5", "", {}, "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og=="],
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
+
+    "@linky-fit/linkshu": ["@linky-fit/linkshu@0.4.0", "", { "dependencies": { "@cashu/cashu-ts": "^4.0.0", "@noble/hashes": "^2.0.1", "@scure/base": "^2.0.0", "cbor-x": "^1.6.0", "effect": "^3.19.19", "light-bolt11-decoder": "^3.2.0" } }, "sha512-ib4PgxI9fKmw805orj6duP+Et1ZoycmCA3BTAuhRG+EqNKHtrxGupWyeXR6G8qJm3R9LTPno+7QR+KvcYQkEpQ=="],
+
+    "@linky-fit/linkstr": ["@linky-fit/linkstr@0.4.0", "", { "dependencies": { "@cashu/cashu-ts": "^4.0.0", "@noble/curves": "^1.4.1", "@noble/hashes": "^2.0.1", "effect": "^3.19.19", "nostr-tools": "^2.25.2" }, "peerDependencies": { "vitest": "^4.0.18" }, "optionalPeers": ["vitest"] }, "sha512-fjYcz6DdnSd2SU130wQCxvCTe0AuMPyRRz/E8856U2ZIcEg8AOsJc0bzrfJBbeiIwidXCaL1UHD0w05iHq58qQ=="],
 
     "@msgpackr-extract/msgpackr-extract-darwin-arm64": ["@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4", "", { "os": "darwin", "cpu": "arm64" }, "sha512-LCkGo6JDfaBhgST7UpPWgNgLINpcpabaHfyz5OBx75nUYxBsaEPxjnyNjWpeb/xBup/682QnBfRBy2/LvPutZQ=="],
 
@@ -2058,14 +2062,6 @@
     "@eslint/eslintrc/globals": ["globals@14.0.0", "", {}, "sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ=="],
 
     "@noble/curves/@noble/hashes": ["@noble/hashes@1.8.0", "", {}, "sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A=="],
-
-    "@platitprosim/core/@linky-fit/linkshu": ["@linky-fit/linkshu@file:../../.worktrees/linky-platitprosim/packages/linkshu/dist", { "dependencies": { "@cashu/cashu-ts": "^4.0.0", "@noble/hashes": "^2.0.1", "@scure/base": "^2.0.0", "cbor-x": "^1.6.0", "effect": "^3.19.19", "light-bolt11-decoder": "^3.2.0" } }],
-
-    "@platitprosim/core/@linky-fit/linkstr": ["@linky-fit/linkstr@file:../../.worktrees/linky-platitprosim/packages/linkstr/dist", { "dependencies": { "@cashu/cashu-ts": "^4.0.0", "@noble/curves": "^1.4.1", "@noble/hashes": "^2.0.1", "effect": "^3.19.19", "nostr-tools": "^2.25.2" }, "peerDependencies": { "vitest": "^4.0.18" }, "optionalPeers": ["vitest"] }],
-
-    "@platitprosim/web-app/@linky-fit/linkshu": ["@linky-fit/linkshu@file:../../.worktrees/linky-platitprosim/packages/linkshu/dist", { "dependencies": { "@cashu/cashu-ts": "^4.0.0", "@noble/hashes": "^2.0.1", "@scure/base": "^2.0.0", "cbor-x": "^1.6.0", "effect": "^3.19.19", "light-bolt11-decoder": "^3.2.0" } }],
-
-    "@platitprosim/web-app/@linky-fit/linkstr": ["@linky-fit/linkstr@file:../../.worktrees/linky-platitprosim/packages/linkstr/dist", { "dependencies": { "@cashu/cashu-ts": "^4.0.0", "@noble/curves": "^1.4.1", "@noble/hashes": "^2.0.1", "effect": "^3.19.19", "nostr-tools": "^2.25.2" }, "peerDependencies": { "vitest": "^4.0.18" }, "optionalPeers": ["vitest"] }],
 
     "@react-native/codegen/hermes-parser": ["hermes-parser@0.36.0", "", { "dependencies": { "hermes-estree": "0.36.0" } }, "sha512-GdpwMmH5x6IpC1cijvcvYnlPB60Mh6kTSF/NFdYV/j56gYdi+0RIakYs+eqOV+bbO0SW7mgVVGSsTJxyPQfo3w=="],
 

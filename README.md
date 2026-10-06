@@ -56,7 +56,7 @@ bun run test
 
 `bun run mint:pay <bolt11>` pays a local invoice, and `bun run mint:token <sats>` prints a local Cashu token. AGENTS.md explains how to run a local Linky against the same services.
 
-**Linky dependency:** `@linky-fit/linkshu` and `@linky-fit/linkstr` are installed from a local build of [linky PR #559](https://github.com/linky-fit/linky/pull/559), which adds P2PK, app messages, NIP-78 and device authorization. Once that PR is released they switch to the npm versions. Until then, employee login works only against a Linky built from that branch.
+Employee login opens Linky at https://nightly.app.linky.fit. Set `VITE_LINKY_URL` to point it elsewhere.
 
 ## Deploy
 

@@ -25,7 +25,7 @@ Bun workspace: `bun` only. Before you declare a task done, run `bun run check-co
 
 ## linky packages
 
-`@linky-fit/linkshu` and `@linky-fit/linkstr` are `file:` deps on the linky worktree builds (`docs/linky-api.md`). bun copies them at install time, so after rebuilding the worktree, run `bun install --force` and restart vite with `--force`. Otherwise its prebundled copy goes stale.
+`@linky-fit/linkshu` and `@linky-fit/linkstr` come from npm (`docs/linky-api.md`). Employee login opens Linky at `VITE_LINKY_URL` (default `https://nightly.app.linky.fit`, `http://localhost:5174` in dev).
 
 ## Paying locally
 
@@ -37,4 +37,4 @@ The dev mint's FakeWallet settles nothing by itself (`FAKEWALLET_BRR: "false"`),
 
 ## Deploy
 
-`scripts/deploy.sh web-app` (https://app.platit.twoballers.dev) and `scripts/deploy.sh website` (https://platit.twoballers.dev). The script builds locally and deploys a prebuilt static output to Vercel, because the linky packages are still `file:` deps.
+`scripts/deploy.sh web-app` (https://app.platit.twoballers.dev) and `scripts/deploy.sh website` (https://platit.twoballers.dev). The script builds locally and deploys a prebuilt static output to Vercel.

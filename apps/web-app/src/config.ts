@@ -21,7 +21,7 @@ export const appConfig = {
     "wss://evolu.eu.freedomrelay.dev",
   ]),
   mintUrl: env.VITE_MAIN_MINT_URL || "https://cashu.cz",
-  linkyUrl: env.VITE_LINKY_URL || "https://app.linky.fit",
+  linkyUrl: env.VITE_LINKY_URL || "https://nightly.app.linky.fit",
   allowInsecureLocalhostRelays:
     env.VITE_ALLOW_INSECURE_LOCALHOST_RELAYS === "1",
 } as const;

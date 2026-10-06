@@ -1,11 +1,6 @@
 # Linky package API used by Platit prosím
 
-The source of truth is linky PR https://github.com/linky-fit/linky/pull/559 (branch `feat/platitprosim-support`, worktree `~/.worktrees/linky-platitprosim`). Until it is released, the app installs the packages as `file:` deps from:
-
-- `/Users/jarvis/.worktrees/linky-platitprosim/packages/linkshu/dist`
-- `/Users/jarvis/.worktrees/linky-platitprosim/packages/linkstr/dist`
-
-To rebuild after changing the worktree: `cd ~/.worktrees/linky-platitprosim && bun run build:npm`. Read the package docs in that worktree (`packages/linkshu/docs/payment-requests.md`, `packages/linkstr/docs/`) for details.
+From `@linky-fit/linkshu` and `@linky-fit/linkstr` 0.4.0 on npm (added in linky PR https://github.com/linky-fit/linky/pull/559). See the package docs for details (`docs/payment-requests.md` in linkshu, `docs/` in linkstr).
 
 ## linkshu
 
