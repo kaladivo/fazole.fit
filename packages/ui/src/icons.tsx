@@ -30,6 +30,7 @@ export function Icon({ name, size = "md", color = "$color" }: IconProps) {
       size={iconSizes[size]}
       color={themed ? getVariableValue(themed) : color}
       strokeWidth={iconStroke}
+      style={{ flexShrink: 0 }}
       aria-hidden
     />
   );

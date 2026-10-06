@@ -6,6 +6,7 @@ import { Reveal, SectionHeading, SiteSection } from "./parts";
 import { sectionIds } from "./sectionIds";
 
 function Cell({ text, ours }: { text: string; ours: boolean }) {
+  const { wide } = useMedia();
   return (
     <Row
       flex={1}
@@ -13,7 +14,7 @@ function Cell({ text, ours }: { text: string; ours: boolean }) {
       gap="$sm"
       paddingHorizontal="$lg"
       paddingVertical="$lg"
-      backgroundColor={ours ? "$accentSoft" : "$transparent"}
+      backgroundColor={ours && wide ? "$accentSoft" : "$transparent"}
     >
       <Icon
         name={ours ? "CircleCheck" : "CircleX"}
@@ -89,21 +90,20 @@ export function Comparison() {
         <Stack gap="$lg">
           <Card padding="$none" gap="$none" overflow="hidden">
             <Row gap="$none" alignItems="stretch">
-              {wide ? <Stack flex={1} flexBasis={0} /> : null}
+              {wide ? <Stack flex={1} flexBasis={0} padding="$lg" /> : null}
               <Text flex={1} flexBasis={0} padding="$lg" variant="title" muted>
                 {comparison.cardTerminal}
               </Text>
-              <Row
+              <Text
                 flex={1}
                 flexBasis={0}
-                gap="$sm"
                 padding="$lg"
-                backgroundColor="$accentSoft"
+                variant="title"
+                color="$accentText"
+                backgroundColor={wide ? "$accentSoft" : "$transparent"}
               >
-                <Text variant="title" color="$accentText">
-                  {comparison.fazole}
-                </Text>
-              </Row>
+                {comparison.fazole}
+              </Text>
             </Row>
             {comparison.rows.map((row) => (
               <TableRow key={row.label} row={row} wide={wide} />

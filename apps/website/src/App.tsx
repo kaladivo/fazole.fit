@@ -1,5 +1,6 @@
 import { Stack } from "@platitprosim/ui";
 import { DemoProvider } from "./demo/DemoProvider";
+import { Audience, Benefits } from "./sections/Benefits";
 import { Comparison } from "./sections/Comparison";
 import { Closing, SiteFooter } from "./sections/Closing";
 import { Faq } from "./sections/Faq";
@@ -29,7 +30,9 @@ export function App() {
             gap="$none"
           >
             <Hero />
+            <Benefits />
             <HowItWorks />
+            <Audience />
             <HistoryFeature />
             <TeamFeature />
             <WalletFeature />

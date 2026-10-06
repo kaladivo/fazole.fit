@@ -22,19 +22,19 @@ export const points = (items: Point[]): Point[] => items;
 
 export const cs = {
   meta: {
-    title: "fazole.fit – platby QR kódem bez provizí",
+    title: "fazole.fit – platební terminál, který patří vám",
     description:
-      "Platební terminál v telefonu. Zákazník zaplatí převodem přes QR kód nebo bitcoinem. Bez provizí, bez serveru, data zůstávají ve vašich zařízeních.",
+      "Platební terminál v telefonu. Zákazník zaplatí převodem přes QR kód nebo bitcoinem. Bez smlouvy a bez serveru: data o tržbách máte jen vy.",
     socialDescription:
-      "Telefon jako platební terminál. Převodem přes QR kód nebo bitcoinem, bez provizí a bez serveru.",
+      "Telefon jako platební terminál. Převodem přes QR kód nebo bitcoinem, data o tržbách máte jen vy.",
     imageAlt: "fazole.fit: telefon s platebním terminálem a QR kódem",
     ogLocale: "cs_CZ",
   },
   nav: {
     home: "fazole.fit, úvod",
+    benefits: "Výhody",
     howItWorks: "Jak to funguje",
-    team: "Zaměstnanci",
-    comparison: "Srovnání",
+    audience: "Pro koho",
     faq: "Otázky",
     openApp: "Otevřít aplikaci",
     switchLanguage: "Switch to English",
@@ -44,16 +44,53 @@ export const cs = {
   },
   hero: {
     eyebrow: "Platební terminál v telefonu",
-    titleBefore: "Přijímejte platby ",
-    titleAccent: "bez\u00a0provizí",
+    titleBefore: "Terminál, který patří ",
+    titleAccent: "jen\u00a0vám",
     titleAfter: "",
     subtitle:
-      "Zákazník naskenuje QR kód a zaplatí převodem z banky, nebo bitcoinem přes Lightning či Cashu. Terminálem je váš telefon. Žádný server, žádný účet: data zůstávají ve vašich zařízeních.",
+      "Zákazník naskenuje QR kód a zaplatí převodem rovnou na váš účet, nebo bitcoinem přes Lightning či Cashu. Bez smlouvy a bez terminálu, stačí telefon. Tržby, historie i bitcoin zůstávají u vás, ne u poskytovatele.",
     primaryCta: "Otevřít aplikaci",
     secondaryCta: "Jak to funguje",
     methods: ["QR platba", "Lightning", "Cashu"],
     demoLabel: "Živé demo",
     demoHint: "Zadejte částku a vyzkoušejte si celou platbu.",
+  },
+  benefits: {
+    eyebrow: "Proč fazole.fit",
+    title: "Vaše peníze, vaše data",
+    body: "Mezi vámi a zákazníkem nestojí žádný prostředník. Kolik prodáváte, víte jen vy.",
+    points: points([
+      {
+        icon: "KeyRound",
+        title: "Data máte jen vy",
+        body: "Tržby, historie i zaměstnanci se ukládají ve vašich zařízeních. Nemáme server, kde by ležely.",
+      },
+      {
+        icon: "Bitcoin",
+        title: "Přijímáte bitcoin",
+        body: "Lightning i Cashu z jednoho QR kódu. Bitcoin je uzamčený vaším klíčem, utratit ho můžete jen vy.",
+      },
+      {
+        icon: "Landmark",
+        title: "Peníze rovnou na účet",
+        body: "Převod jde z účtu zákazníka přímo na váš. Nikdo ho nedrží a na výplatu nečekáte.",
+      },
+      {
+        icon: "Smartphone",
+        title: "Bez smlouvy a terminálu",
+        body: "Stačí telefon nebo tablet, který už máte. Otevřete aplikaci a můžete začít.",
+      },
+      {
+        icon: "Users",
+        title: "Pro celý tým",
+        body: "Zaměstnanci přijímají platby na svých telefonech, vy vidíte všechno.",
+      },
+      {
+        icon: "ShieldCheck",
+        title: "Otevřený kód",
+        body: "Celý zdrojový kód je veřejný. Kdokoli si může ověřit, co aplikace dělá.",
+      },
+    ]),
   },
   how: {
     eyebrow: "Jak to funguje",
@@ -85,6 +122,33 @@ export const cs = {
       pill: "Potvrzeno automaticky",
       body: "Lightning i Cashu v jednom QR kódu (BIP-321). Aplikace platbu pozná sama a hned ukáže potvrzení.",
     },
+  },
+  audience: {
+    eyebrow: "Pro koho",
+    title: "Pro každého, kdo prodává osobně",
+    body: "Všude, kde zákazník stojí před vámi s telefonem v ruce.",
+    points: points([
+      {
+        icon: "Coffee",
+        title: "Kavárny a bistra",
+        body: "Rychlé markování u pultu a tržba celého týmu v jedné historii.",
+      },
+      {
+        icon: "ShoppingBasket",
+        title: "Obchody a trhy",
+        body: "Krámek, stánek nebo farmářský trh. Terminál nosíte v kapse.",
+      },
+      {
+        icon: "Scissors",
+        title: "Salony a služby",
+        body: "Kadeřnictví, kosmetika, masáže. Zákazník zaplatí na konci návštěvy.",
+      },
+      {
+        icon: "Hammer",
+        title: "Řemeslníci",
+        body: "Zaplaceno hned po práci, přímo u zákazníka.",
+      },
+    ]),
   },
   history: {
     eyebrow: "Historie",
@@ -152,14 +216,19 @@ export const cs = {
   comparison: {
     eyebrow: "Srovnání",
     title: "Proč ne karetní terminál?",
-    body: "Karetní terminál si z každé platby vezme procenta a potřebuje vlastní hardware. U fazole.fit odpadá obojí.",
+    body: "Karetní terminál potřebuje smlouvu, vlastní hardware a o každé vaší platbě ví poskytovatel. fazole.fit nic z toho nepotřebuje.",
     cardTerminal: "Karetní terminál",
     fazole: "fazole.fit",
     rows: [
       {
-        label: "Poplatek z platby",
-        cardTerminal: "1–2 % z každé platby",
-        fazole: "Převodem 0 Kč, bitcoinem pár satoshi",
+        label: "Vaše data",
+        cardTerminal: "U poskytovatele",
+        fazole: "Jen ve vašich zařízeních",
+      },
+      {
+        label: "Bitcoin",
+        cardTerminal: "Ne",
+        fazole: "Lightning i Cashu",
       },
       {
         label: "Hardware",
@@ -167,19 +236,19 @@ export const cs = {
         fazole: "Telefon, který už máte",
       },
       {
-        label: "Měsíční paušál",
-        cardTerminal: "Často ano",
-        fazole: "Žádný",
-      },
-      {
         label: "Smlouva",
         cardTerminal: "S bankou nebo poskytovatelem",
         fazole: "Žádná, stačí otevřít aplikaci",
       },
       {
-        label: "Vaše data",
-        cardTerminal: "U poskytovatele",
-        fazole: "Jen ve vašich zařízeních",
+        label: "Měsíční paušál",
+        cardTerminal: "Často ano",
+        fazole: "Žádný",
+      },
+      {
+        label: "Poplatky",
+        cardTerminal: "1–2 % z každé platby",
+        fazole: "Tarif vaší banky, bitcoin pár satoshi",
       },
     ] satisfies ComparisonRow[],
     note: "Karty zatím nepřijímáme: zákazník potřebuje bankovní aplikaci nebo bitcoinovou peněženku.",
@@ -218,7 +287,7 @@ export const cs = {
       {
         question: "Kolik to stojí?",
         answer:
-          "Aplikace je zdarma a z plateb si nic nebere. Převod jde z účtu zákazníka rovnou na váš účet bez poplatků. U bitcoinu si mincovna Cashu účtuje malé poplatky, obvykle pár satoshi: když platbu přijmete, když ji telefon zaměstnance posílá vám a když peníze vybíráte.",
+          "Aplikace je zdarma a z plateb si nic nebere. Převod jde z účtu zákazníka rovnou na váš účet a banka si za něj účtuje to, co za každou příchozí platbu podle vašeho tarifu. U bitcoinu si mincovna Cashu účtuje malé poplatky, obvykle pár satoshi: když platbu přijmete, když ji telefon zaměstnance posílá vám a když peníze vybíráte.",
       },
       {
         question: "Co potřebuje zákazník?",

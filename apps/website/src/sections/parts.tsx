@@ -1,4 +1,12 @@
-import { Icon, Row, Stack, Text, themes, useMedia } from "@platitprosim/ui";
+import {
+  Card,
+  Icon,
+  Row,
+  Stack,
+  Text,
+  themes,
+  useMedia,
+} from "@platitprosim/ui";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import type { Point } from "../copy";
@@ -128,6 +136,47 @@ export function PointList({ points }: { points: readonly Point[] }) {
             </Text>
             <Text muted>{point.body}</Text>
           </Stack>
+        </Row>
+      ))}
+    </Stack>
+  );
+}
+
+/** Point cards in rows of `columns` on wide screens, stacked on phones. */
+export function PointGrid({
+  points,
+  columns,
+}: {
+  points: readonly Point[];
+  columns: number;
+}) {
+  const { wide } = useMedia();
+  const card = (point: Point) => (
+    <Card
+      key={point.title}
+      flex={wide ? 1 : undefined}
+      gap="$lg"
+      padding="$xxl"
+    >
+      <IconTile icon={point.icon} />
+      <Stack gap="$xs">
+        <Text variant="title" color="$colorStrong">
+          {point.title}
+        </Text>
+        <Text muted>{point.body}</Text>
+      </Stack>
+    </Card>
+  );
+  if (!wide) return <Stack gap="$lg">{points.map(card)}</Stack>;
+  const rows = Array.from(
+    { length: Math.ceil(points.length / columns) },
+    (_, index) => points.slice(index * columns, (index + 1) * columns),
+  );
+  return (
+    <Stack gap="$lg">
+      {rows.map((row, index) => (
+        <Row key={index} gap="$lg" alignItems="stretch">
+          {row.map(card)}
         </Row>
       ))}
     </Stack>
