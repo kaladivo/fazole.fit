@@ -202,7 +202,9 @@ function AddEmployeeSheet({
     if (pubkey === null || pubkeyError !== null) return;
     setBusy(true);
     try {
-      await addEmployee(evolu, { pubkey, name: shownName });
+      const linkyName =
+        shownName === "" ? (await profiles.get(pubkey))?.name : undefined;
+      await addEmployee(evolu, { pubkey, name: linkyName ?? shownName });
       reset();
     } finally {
       setBusy(false);

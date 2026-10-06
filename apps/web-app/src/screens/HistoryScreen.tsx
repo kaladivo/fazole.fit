@@ -114,7 +114,11 @@ export function HistoryScreen({ profile }: { profile: ShopProfile }) {
                 <ListRow
                   key={payment.id}
                   testID={`payment-row-${payment.id}`}
-                  icon={methodIcons[payment.method]}
+                  icon={
+                    payment.status === "paid"
+                      ? methodIcons[payment.method]
+                      : "QrCode"
+                  }
                   title={czk(payment.amountCzk)}
                   description={t("historyRow", {
                     time: formatTime(payment.createdAtMs, lang),
@@ -159,10 +163,14 @@ export function HistoryScreen({ profile }: { profile: ShopProfile }) {
             </Stack>
             <DetailRows
               details={[
-                {
-                  label: t("paymentMethod"),
-                  value: t(methodLabels[selected.method]),
-                },
+                ...(selected.status === "paid"
+                  ? [
+                      {
+                        label: t("paymentMethod"),
+                        value: t(methodLabels[selected.method]),
+                      },
+                    ]
+                  : []),
                 ...(selected.sats !== null && selected.method !== "bank"
                   ? [
                       {
