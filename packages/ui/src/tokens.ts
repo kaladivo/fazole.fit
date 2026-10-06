@@ -140,7 +140,7 @@ export const shadow = {
   floating: "0px 20px 48px $shadowColor",
 };
 
-/** The logo tile: a gold bean photographed on black (src/logo.webp, apps/web-app/public/logo.png). */
+/** The logo tile: a gold bean photographed on black (src/logo.webp, apps/web-app/public/logo.webp). */
 export const brandMark = {
   background: palette.black,
   // Corner radius as a share of the tile's width.

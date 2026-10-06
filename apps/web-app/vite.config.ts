@@ -10,7 +10,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      // Icons, favicon and apple-touch-icon are generated from public/logo.png (pwa-assets.config.ts).
+      // Icons, favicon and apple-touch-icon are generated from public/logo.webp (pwa-assets.config.ts).
       pwaAssets: { config: true, injectThemeColor: false },
       // sqlite3.wasm is precached too, so Evolu opens its database offline.
       workbox: {

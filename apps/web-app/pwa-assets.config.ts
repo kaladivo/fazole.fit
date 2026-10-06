@@ -16,5 +16,5 @@ export default defineConfig({
     maskable: { ...minimal2023Preset.maskable, ...tile },
     apple: { ...minimal2023Preset.apple, ...tile },
   },
-  images: ["public/logo.png"],
+  images: ["public/logo.webp"],
 });
