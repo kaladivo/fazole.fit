@@ -152,7 +152,12 @@ function Sections({
     );
   }
   return (
-    <Stack flex={1} gap="$none">
+    <Stack
+      flex={1}
+      gap="$none"
+      backgroundColor="$surface"
+      data-safe-area="bottom"
+    >
       <Stack flex={1} gap="$none" minHeight={0}>
         {body}
       </Stack>
