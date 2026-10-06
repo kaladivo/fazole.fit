@@ -1,5 +1,6 @@
+import { themes as uiThemes } from "@platitprosim/ui/tokens";
 import type { ColorMode } from "@platitprosim/ui/tokens";
-import { useSyncExternalStore } from "react";
+import { useLayoutEffect, useSyncExternalStore } from "react";
 import { useSetting } from "./storage";
 
 export const themes = ["system", "light", "dark"] as const;
@@ -30,5 +31,14 @@ export const useThemeSetting = (): ThemeSetting => {
 export const useColorMode = (): ColorMode => {
   const system = useSystemColorMode();
   const theme = useThemeSetting();
-  return theme === "system" ? system : theme;
+  const mode = theme === "system" ? system : theme;
+  useLayoutEffect(() => {
+    const background = uiThemes[mode].background;
+    document.documentElement.style.setProperty("--app-background", background);
+    document.documentElement.style.colorScheme = mode;
+    document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
+      meta.setAttribute("content", background);
+    });
+  }, [mode]);
+  return mode;
 };

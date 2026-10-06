@@ -2,8 +2,9 @@
 
 /* Painted before the bundle loads; these repeat themes.light and themes.dark of @platitprosim/ui. */
 :root {
+  --app-background: #f7f4ec;
   color-scheme: light dark;
-  background-color: #f7f4ec;
+  background-color: var(--app-background);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
@@ -13,7 +14,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    background-color: #0a0908;
+    --app-background: #0a0908;
   }
 }
 
@@ -26,9 +27,22 @@ body,
   overscroll-behavior: none;
 }
 
+body {
+  /* iOS percentage heights exclude the translucent status bar. */
+  height: 100vh;
+  background-color: var(--app-background);
+}
+
 #root {
   display: flex;
+  background-color: var(--app-background);
   padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
   box-sizing: border-box;
+}
+
+#root:not(:has([data-safe-area="bottom"])),
+[data-safe-area="bottom"] {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }

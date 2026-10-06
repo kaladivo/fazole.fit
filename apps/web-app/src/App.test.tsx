@@ -1,4 +1,5 @@
 import { parseCzechAccount } from "@platitprosim/core";
+import { themes as uiThemes } from "@platitprosim/ui/tokens";
 import { Either } from "effect";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -18,6 +19,8 @@ afterEach(async () => {
   await act(async () => root?.unmount());
   navigateTo("welcome");
   vi.restoreAllMocks();
+  document.documentElement.style.removeProperty("--app-background");
+  document.documentElement.style.removeProperty("color-scheme");
 });
 
 const renderAt = async (route: Route, evolu: AppEvolu = createTestEvolu()) => {
@@ -51,6 +54,42 @@ describe("App", () => {
     expect((await renderAt("welcome", evolu)).textContent).toContain(
       "Set up a shop",
     );
+  });
+
+  it("paints the document and browser chrome with the saved theme and follows theme changes", async () => {
+    const matchMedia = window.matchMedia;
+    vi.spyOn(window, "matchMedia").mockImplementation((media) => ({
+      ...matchMedia(media),
+      matches: media === "(prefers-color-scheme: dark)",
+    }));
+    const metas = ["light", "dark"].map((mode) => {
+      const meta = document.createElement("meta");
+      meta.name = "theme-color";
+      meta.media = `(prefers-color-scheme: ${mode})`;
+      document.head.appendChild(meta);
+      return meta;
+    });
+    const evolu = createTestEvolu();
+    try {
+      await saveSetting(evolu, "theme", "light");
+      await renderAt("welcome", evolu);
+      for (const setting of ["light", "dark", "system"] as const) {
+        await act(async () => saveSetting(evolu, "theme", setting));
+        const mode = setting === "system" ? "dark" : setting;
+        await vi.waitFor(() => {
+          expect(
+            document.documentElement.style.getPropertyValue("--app-background"),
+          ).toBe(uiThemes[mode].background);
+          expect(document.documentElement.style.colorScheme).toBe(mode);
+          expect(metas.map((meta) => meta.content)).toEqual([
+            uiThemes[mode].background,
+            uiThemes[mode].background,
+          ]);
+        });
+      }
+    } finally {
+      metas.forEach((meta) => meta.remove());
+    }
   });
 
   it("keeps an install without a shop out of the sections", async () => {
