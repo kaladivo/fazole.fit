@@ -12,7 +12,7 @@ export const createAppEvolu = (
   config: Partial<EvoluConfig> = {},
 ): AppEvolu =>
   createEvolu(deps)(AppSchema, {
-    name: SimpleName.orThrow("platitprosim"),
+    name: SimpleName.orThrow("fazole"),
     transports: appConfig.evoluServerUrls.map((url) => ({
       type: "WebSocket",
       url,

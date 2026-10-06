@@ -29,7 +29,7 @@ import type { DemoPayment, DemoWithdrawal, WithdrawalKind } from "../store";
 
 const demoTargets: Record<WithdrawalKind, string> = {
   lightning: "kavarna@example.com",
-  linky: "npub1demo0platitprosim0owner0linky0profile",
+  linky: "npub1demo0fazole0fit0owner0linky0profile",
 };
 
 const payoutIcons: Record<WithdrawalKind, IconName> = {

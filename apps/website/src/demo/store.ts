@@ -42,13 +42,13 @@ export const seedEmployees: DemoEmployee[] = [
   {
     id: "tereza",
     name: "Tereza Malá",
-    npub: "npub1t8rezq4m3lq0demo0employee0tereza0mala0platitprosim0x7k2",
+    npub: "npub1t8rezq4m3lq0demo0employee0tereza0mala0fazole0fit0x7k2",
     linked: true,
   },
   {
     id: "martin",
     name: "Martin Novák",
-    npub: "npub1m4rtn0v4kq0demo0employee0martin0novak0platitprosim0q9fd",
+    npub: "npub1m4rtn0v4kq0demo0employee0martin0novak0fazole0fit0q9fd",
     linked: true,
   },
 ];
@@ -95,8 +95,8 @@ export const seedWithdrawals = (): DemoWithdrawal[] => [
 /** A new employee for the "scan a Linky profile" demo. */
 export const scannedProfile = {
   name: "Jana Svobodová",
-  npub: "npub1j4n4sv0b0d0v4demo0employee0jana0svobodova0platitprosim0",
-  link: "https://linky.fit/p/npub1j4n4sv0b0d0v4demo0employee0jana0svobodova0platitprosim0",
+  npub: "npub1j4n4sv0b0d0v4demo0employee0jana0svobodova0fazole0fit0",
+  link: "https://linky.fit/p/npub1j4n4sv0b0d0v4demo0employee0jana0svobodova0fazole0fit0",
 };
 
 export type Settlement =

@@ -259,7 +259,7 @@ export interface LeaseLocks {
   ) => Promise<void>;
 }
 
-const LEASE_LOCK_PREFIX = "platitprosim.linkshu.lease.";
+const LEASE_LOCK_PREFIX = "fazole.linkshu.lease.";
 
 /**
  * A lease is a Web Lock held until `releaseLease` or the tab closing, so two

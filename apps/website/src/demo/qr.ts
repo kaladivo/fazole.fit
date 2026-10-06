@@ -20,7 +20,7 @@ export const demoSpd = (halere: number, variableSymbol: string): string =>
 
 /** A BIP-321 URI shaped like the app's, with a Lightning invoice and a Cashu request that no wallet will pay. */
 export const demoBip321 = (sats: number): string =>
-  `bitcoin:?lightning=lnbc${sats * 10}n1demo0platitprosim0demo0invoice0do0not0pay&creq=creqAdemoPlatitProsimDoNotPay`;
+  `bitcoin:?lightning=lnbc${sats * 10}n1demo0fazole0fit0demo0invoice0do0not0pay&creq=creqAdemoFazoleFitDoNotPay`;
 
 /** A unique-looking 10-digit variable symbol. */
 export const randomVariableSymbol = (): string =>

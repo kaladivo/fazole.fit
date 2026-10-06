@@ -73,12 +73,12 @@ export const encodeAppMessage = Schema.encodeSync(AppMessageJson);
 
 /** The app's gift-wrapped message channel: `draft` to send a message, `decode` an `AppMessageReceived`. */
 export const appMessages = appMessageChannel(
-  AppNamespace.make("platitprosim"),
+  AppNamespace.make("fazole"),
   AppMessage,
 );
 
 /** The app name a Linky device authorization names; the signer shows it and signs it. */
-export const DEVICE_AUTHORIZATION_APP = "Platit prosím";
+export const DEVICE_AUTHORIZATION_APP = "fazole.fit";
 
 /** The NIP-78 `d` tag under which an employee device publishes its authorization. */
-export const EMPLOYEE_DEVICE_IDENTIFIER = "platitprosim:employee-device";
+export const EMPLOYEE_DEVICE_IDENTIFIER = "fazole:employee-device";

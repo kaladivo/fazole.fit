@@ -1,7 +1,5 @@
 # fazole.fit: spec
 
-Formerly "Platit prosím"; protocol identifiers (the `platitprosim` app namespace, the `Platit prosím` device-authorization app name, the Evolu database name) keep the old name so existing installs keep working.
-
 A payment terminal for Czech merchants, like qrterminal.cz but local-first. The merchant types an amount and the app shows a QR code. The customer pays by Czech bank transfer (SPD QR), by Lightning, or by Cashu (BIP-321 QR). Shops can have employees. There is no backend: data lives in Evolu, devices talk over Nostr, and money moves through a Cashu mint.
 
 The sibling project `../linky` (`/Users/jarvis/workspace/linky`) is the reference for the stack, its patterns and the UI style. We consume its npm packages `@linky-fit/linkstr` (Nostr) and `@linky-fit/linkshu` (Cashu wallet).
@@ -102,7 +100,7 @@ Language (cs/en), shop details (owner), backup phrase, restore, and a "reset thi
   - `EmployeeRemoved` (owner → employee device).
   - `PaymentRecord` (employee device → owner): `paymentId`, `amountCzk` (haléře int), `sats?`, `method`, `status`, `vs?`, `createdAt`, `updatedAt`, `paidAt?`.
   - `LockedToken` (employee device → owner): `paymentIds` (every payment the token's sats come from), `token` (P2PK-locked to the owner).
-- Employee attestation: over NIP-46, Linky signs a **kind 24138** event with tags exactly `[["linky","device_authorization"],["p",<device pubkey hex>],["app","Platit prosím"]]` and empty content. The nostrconnect URI must request `sign_event:24138` (`DEVICE_AUTHORIZATION_PERMISSION`) and carry `name=Platit prosím`. The device publishes it as NIP-78 (kind 30078, `d=platitprosim:employee-device`, `p=<employee pubkey>`), authored by the device key, with the signed event as content. The owner watches `#p=[active employee pubkeys]` and accepts the event only if `verifyDeviceAuthorization(content)` returns `{author, device, app}` with `device === event author`, `app === "Platit prosím"` and `author` an active employee.
+- Employee attestation: over NIP-46, Linky signs a **kind 24138** event with tags exactly `[["linky","device_authorization"],["p",<device pubkey hex>],["app","fazole.fit"]]` and empty content. The nostrconnect URI must request `sign_event:24138` (`DEVICE_AUTHORIZATION_PERMISSION`) and carry `name=fazole.fit`. The device publishes it as NIP-78 (kind 30078, `d=fazole:employee-device`, `p=<employee pubkey>`), authored by the device key, with the signed event as content. The owner watches `#p=[active employee pubkeys]` and accepts the event only if `verifyDeviceAuthorization(content)` returns `{author, device, app}` with `device === event author`, `app === "fazole.fit"` and `author` an active employee.
 - Because the attestation is public, any owner who lists the same employee could send that device a `ShopConfig`. The employee device therefore shows "Join <shop name>?" and stores the membership only after the employee confirms.
 
 ## Local dev
