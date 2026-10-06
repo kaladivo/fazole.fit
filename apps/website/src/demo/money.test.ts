@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  formatCzk,
+  formatCrowns,
   formatTyped,
   halereToSats,
   pressKey,
@@ -22,8 +22,8 @@ describe("demo money", () => {
   it("formats amounts the Czech and the English way", () => {
     expect(formatTyped("1250,5", "cs")).toBe("1 250,5");
     expect(formatTyped("1250,5", "en")).toBe("1,250.5");
-    expect(formatCzk(125_000, "cs")).toBe("1 250 Kč");
-    expect(formatCzk(125_050, "en")).toBe("CZK 1,250.50");
+    expect(formatCrowns(125_000, "cs")).toBe("1 250");
+    expect(formatCrowns(125_050, "en")).toBe("1,250.50");
   });
 
   it("rounds sats up at the demo rate", () => {

@@ -201,6 +201,8 @@ export interface SheetProps {
   title: string;
   /** Hides the visible title; it still names the sheet for assistive technology. */
   hideTitle?: boolean | undefined;
+  /** Shows a close button with this accessibility label. */
+  closeLabel?: string | undefined;
   children: ReactNode;
 }
 
@@ -210,10 +212,12 @@ export function Sheet({
   onOpenChange,
   title,
   hideTitle = false,
+  closeLabel,
   children,
 }: SheetProps) {
   const titleText = (
     <TamaguiDialog.Title
+      flex={1}
       fontFamily="$body"
       {...textVariant("label")}
       color="$colorMuted"
@@ -229,7 +233,21 @@ export function Sheet({
       placement="bottom"
       described={false}
     >
-      {hideTitle ? <VisuallyHidden>{titleText}</VisuallyHidden> : titleText}
+      {hideTitle ? <VisuallyHidden>{titleText}</VisuallyHidden> : null}
+      {hideTitle && !closeLabel ? null : (
+        <Row justifyContent="flex-end" marginRight={-space.sm}>
+          {hideTitle ? null : titleText}
+          {closeLabel ? (
+            <IconButton
+              testID="sheet-close"
+              icon="X"
+              accessibilityLabel={closeLabel}
+              size="sm"
+              onPress={() => onOpenChange(false)}
+            />
+          ) : null}
+        </Row>
+      )}
       <ScrollView flexShrink={1} keyboardShouldPersistTaps="handled">
         <Stack>{children}</Stack>
       </ScrollView>

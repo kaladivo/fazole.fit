@@ -51,15 +51,6 @@ export const formatCrowns = (halere: number, locale: Locale): string =>
     maximumFractionDigits: 2,
   }).format(halere / 100);
 
-/** Crowns with the currency, e.g. "1 250 Kč" or "CZK 1,250". */
-export const formatCzk = (halere: number, locale: Locale): string =>
-  new Intl.NumberFormat(intlLocale(locale), {
-    style: "currency",
-    currency: "CZK",
-    minimumFractionDigits: halere % 100 === 0 ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(halere / 100);
-
 /** Rounds up, so the merchant never receives less than the CZK amount. */
 export const halereToSats = (halere: number): number =>
   Math.ceil((halere * satsPerBtc) / (demoCzkPerBtc * 100));

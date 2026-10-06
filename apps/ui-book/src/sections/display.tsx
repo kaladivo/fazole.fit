@@ -55,6 +55,13 @@ export const display: Section = {
           trailing={<UI.StatusBadge status="pending" label="Čeká" />}
         />
         <UI.ListRow
+          title="Jana Nováková"
+          description="npub1x7k…q9vd"
+          leading={<UI.Avatar name="Jana Nováková" />}
+          meta={<UI.Pill label="Čeká na přihlášení" tone="warning" dot />}
+          onPress={() => {}}
+        />
+        <UI.ListRow
           title="Language"
           icon="Languages"
           value="Čeština"

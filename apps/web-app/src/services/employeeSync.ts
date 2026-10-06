@@ -13,6 +13,7 @@ import { Array as Arr, Effect, Either } from "effect";
 import {
   attachForward,
   loadAvailableProofs,
+  loadFundedMints,
   loadPayments,
   loadPaymentsForwardedBy,
   loadStoredMembership,
@@ -24,6 +25,7 @@ import {
   paymentMintOf,
   paymentRecordOf,
   paymentsQuery,
+  receiptsQuery,
   watchQueries,
 } from "../storage";
 import type { AppEvolu, Payment, StoredMembership } from "../storage";
@@ -80,6 +82,8 @@ export const createSweep =
         ),
       );
       if (Either.isRight(sent)) return sent.right;
+      // Too few sats for the fee whoever redeems the token pays.
+      if (sent.left._tag === "AmountConsumedByFee") return null;
       if (sent.left._tag !== "InsufficientFunds") {
         console.warn("forward not sent", sent.left);
         return "retry";
@@ -105,8 +109,9 @@ const forwardOf = ({
 /**
  * Employee install: reports every change of a payment to the owner, and
  * sweeps Bitcoin the device received to the owner as a P2PK-locked token,
- * so the device never keeps the shop's money. A payment counts as forwarded
- * only once the token carrying its sats reached a relay.
+ * so the device never keeps the shop's money, also sats that paid no
+ * payment. A payment counts as forwarded only once the token carrying its
+ * sats reached a relay.
  */
 export const createEmployeeSync = ({
   evolu,
@@ -204,8 +209,14 @@ export const createEmployeeSync = ({
         carried,
       );
     }
-    const byMint = Arr.groupBy(unswept, (payment) => mintOf(payment) ?? "");
-    for (const [mintUrl, carried] of Object.entries(byMint)) {
+    const byMint = new Map<string, readonly Payment[]>(
+      Object.entries(Arr.groupBy(unswept, (payment) => mintOf(payment) ?? "")),
+    );
+    for (const funded of await loadFundedMints(evolu)) {
+      const mint = parseMintUrl(funded) ?? funded;
+      if (!byMint.has(mint)) byMint.set(mint, []);
+    }
+    for (const [mintUrl, carried] of byMint) {
       const mint = parseMintUrl(mintUrl);
       if (mint === null) continue;
       const swept = await sweep(mint, owner);
@@ -266,7 +277,7 @@ export const createEmployeeSync = ({
       let first = true;
       watchQueries(
         evolu,
-        [paymentsQuery(evolu), membershipRowQuery(evolu)],
+        [paymentsQuery(evolu), membershipRowQuery(evolu), receiptsQuery(evolu)],
         () => {
           void sync(first);
           first = false;

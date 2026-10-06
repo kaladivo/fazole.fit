@@ -79,10 +79,25 @@ export { reportedPaymentIdFor } from "./schema";
 export type {
   EmployeeId,
   PaymentRowId,
+  ReceiptId,
   ShopOfferId,
   WithdrawalId,
 } from "./schema";
-export { loadAvailableProofs, useWalletBalance } from "./wallet";
+export {
+  loadAvailableProofs,
+  loadFundedMints,
+  loadWalletBalance,
+  useHoldsShopFunds,
+  useWalletBalance,
+} from "./wallet";
+export {
+  hasReceipt,
+  loadReceipts,
+  receiptsQuery,
+  recordReceipt,
+  useReceipts,
+} from "./receipts";
+export type { Receipt, ReceiptKind } from "./receipts";
 export {
   attachWithdrawalSend,
   createWithdrawal,

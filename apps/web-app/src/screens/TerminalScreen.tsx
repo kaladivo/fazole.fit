@@ -42,7 +42,7 @@ export function TerminalScreen({ profile }: { profile: ShopProfile }) {
       <Text eyebrow textAlign="center" numberOfLines={1}>
         {profile.name}
       </Text>
-      <Stack flex={1} justifyContent="center" minHeight="$hero">
+      <Stack flex={1} justifyContent="center" minHeight="$amount">
         <AmountDisplay
           testID="terminal-amount"
           value={formatAmountInput(input, lang)}

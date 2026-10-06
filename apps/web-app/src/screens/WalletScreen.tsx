@@ -16,7 +16,14 @@ import { useI18n } from "../i18n";
 import type { Translate } from "../i18n";
 import { formatCzkValue, formatDateTime, formatWhole } from "../i18n/format";
 import { useCzkRate } from "../services";
-import { usePayments, useWalletBalance, useWithdrawals } from "../storage";
+import type { Employee } from "../storage";
+import {
+  useEmployees,
+  usePayments,
+  useReceipts,
+  useWalletBalance,
+  useWithdrawals,
+} from "../storage";
 import { walletActivity } from "../wallet/activity";
 import type { WalletActivity } from "../wallet/activity";
 import { methodIcons, methodLabels } from "./paymentLabels";
@@ -29,7 +36,12 @@ export function WalletScreen() {
   const { lang, t } = useI18n();
   const balance = useWalletBalance();
   const rate = useCzkRate();
-  const activity = walletActivity(usePayments(), useWithdrawals());
+  const activity = walletActivity(
+    usePayments(),
+    useReceipts(),
+    useWithdrawals(),
+  );
+  const employees = useEmployees();
   const [sheet, setSheet] = useState<Sheet>(null);
   const czkPerBtc = rate.status === "ready" ? rate.czkPerBtc : null;
   const closeSheet = (open: boolean) => {
@@ -92,7 +104,7 @@ export function WalletScreen() {
         ) : (
           <Card paddingVertical="$sm" gap="$none">
             {activity.map((item) => (
-              <ActivityRow key={item.id} item={item} />
+              <ActivityRow key={item.id} item={item} employees={employees} />
             ))}
           </Card>
         )}
@@ -113,36 +125,75 @@ export function WalletScreen() {
   );
 }
 
-const activityLabel = (item: WalletActivity, t: Translate) =>
-  item.kind === "payment"
-    ? t(methodLabels[item.method])
-    : t(
+const activityLabel = (
+  item: WalletActivity,
+  employees: readonly Employee[],
+  t: Translate,
+) => {
+  switch (item.kind) {
+    case "lightning":
+      return t(methodLabels.lightning);
+    case "receipt": {
+      const { receipt } = item;
+      if (receipt.kind === "cashu") {
+        return t(
+          receipt.paymentId === null ? "receiptUnassigned" : methodLabels.cashu,
+        );
+      }
+      const name = employees.find(({ id }) => id === receipt.employeeId)?.name;
+      return name
+        ? t("receiptForwarded", { name })
+        : t("receiptForwardedDevice");
+    }
+    case "withdrawal":
+      return t(
         item.withdrawal.kind === "lightning"
           ? "withdrawalLightning"
           : "withdrawalLinky",
       );
+  }
+};
 
-function ActivityRow({ item }: { item: WalletActivity }) {
+const activityIcon = (item: WalletActivity) =>
+  item.kind === "lightning"
+    ? methodIcons.lightning
+    : item.kind === "receipt"
+      ? item.receipt.kind === "forward"
+        ? "Users"
+        : methodIcons.cashu
+      : item.withdrawal.kind === "lightning"
+        ? "Zap"
+        : "Send";
+
+function ActivityRow({
+  item,
+  employees,
+}: {
+  item: WalletActivity;
+  employees: readonly Employee[];
+}) {
   const { lang, t } = useI18n();
   const sats = formatWhole(item.sats, lang);
   const status = item.kind === "withdrawal" ? item.withdrawal.status : "done";
+  const row = t("activityRow", {
+    date: formatDateTime(item.atMs, lang),
+    label: activityLabel(item, employees, t),
+  });
   return (
     <ListRow
       testID={`activity-${item.id}`}
-      icon={
-        item.kind === "payment"
-          ? methodIcons[item.method]
-          : item.withdrawal.kind === "lightning"
-            ? "Zap"
-            : "Send"
-      }
-      title={t(item.kind === "payment" ? "activityIn" : "activityOut", {
+      icon={activityIcon(item)}
+      title={t(item.kind === "withdrawal" ? "activityOut" : "activityIn", {
         sats,
       })}
-      description={t("activityRow", {
-        date: formatDateTime(item.atMs, lang),
-        label: activityLabel(item, t),
-      })}
+      description={
+        item.feeSats > 0
+          ? t("activityRowFee", {
+              row,
+              fee: formatWhole(item.feeSats, lang),
+            })
+          : row
+      }
       trailing={
         status === "pending" ? (
           <Pill label={t("withdrawalPending")} tone="warning" busy />

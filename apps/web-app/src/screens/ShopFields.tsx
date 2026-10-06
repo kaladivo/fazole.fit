@@ -41,7 +41,9 @@ export function ShopFields({
         value={form.account}
         onChangeText={form.setAccount}
         onBlur={form.touchAccount}
-        inputMode="numeric"
+        // The account needs "/" and "-", which numeric phone keyboards lack.
+        inputMode="text"
+        autoCapitalize="none"
         autoComplete="off"
         autoCorrect={false}
         spellCheck={false}

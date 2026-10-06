@@ -44,7 +44,7 @@ One install is either an **owner** (it has a `shop` row) or an **employee** (it 
 
 ### Restore
 
-"I have a backup phrase": the user enters the 12 words, the app calls `evolu.restoreAppOwner`, the data syncs, and the app routes by role.
+"I have a backup phrase": the user enters the 24 words, the app calls `evolu.restoreAppOwner`, the data syncs, and the app routes by role.
 
 ### Adding an employee
 
@@ -66,12 +66,12 @@ One install is either an **owner** (it has a `shop` row) or an **employee** (it 
 - A big amount display in CZK, a numeric keypad (0-9, comma for haléře, backspace) and a primary "Request payment" button. It must be minimal and thumb-friendly.
 - The payment screen has a segmented switch: **Bank** | **Bitcoin**.
   - **Bank**: an SPD QR built as `SPD*1.0*ACC:<IBAN>*AM:<amount>*CC:CZK*X-VS:<vs>*MSG:<shop name>`, with the amount, VS and account shown in text. The VS is unique per payment (numeric, ≤10 digits). The merchant confirms with "Mark as paid"; there is no automatic check. "Cancel" is also offered.
-  - **Bitcoin**: the CZK amount is converted to sats with the linkshu fiat rate, which is shown along with the rate. The device:
+  - **Bitcoin**: the CZK amount is converted to sats with the linkshu fiat rate, which is shown along with the rate. The sats are raised a sat at a time until no other open request of the device (unpaid, also cancelled, from the last 24 hours) asks the same amount, because Linky's tokens name no request. Below a minimum the mint's fees allow (10 sat, scaled for mints charging over 1 sat per proof) the tab shows "Bitcoin from X Kč" instead and the bank leg still works. The device:
     1. creates a mint quote on the shop mint (bolt11, NUT-20 locked to the device key);
     2. shows the BIP-321 URI `bitcoin:?lightning=<bolt11>&creq=<creqA…>`. The creq is NUT-18: amount, `sat`, single use, the shop mint, and a nostr transport to the device nprofile, the same format linky builds.
-  - Detection is automatic: either the quote is paid (the device then mints the proofs), or a Cashu token for this request arrives over Nostr (the device then receives it, which swaps and validates it). Then the payment becomes `paid` and the app shows a success overlay.
+  - Detection is automatic: either the quote is paid (the device then mints the proofs), or a Cashu token for this request arrives over Nostr (the device then receives it, which swaps and validates it). Then the payment becomes `paid` and the app shows a success overlay. A NUT-18 payload matches its request by id; a bare token matches the one open request at its mint asking exactly its amount. A cancelled request can still be paid this way. A token that matches no request, or several, is kept as an unassigned receipt.
 - Money flow: customer → device wallet → owner.
-  - On an employee device, after the device receives the funds, it sends a P2PK (NUT-11) token locked to the owner's pubkey, gift-wrapped to the owner. The record keeps `forwardedAt`, and failed forwards retry.
+  - On an employee device, after the device receives the funds, it sends a P2PK (NUT-11) token locked to the owner's pubkey, gift-wrapped to the owner. The record keeps `forwardedAt`, and failed forwards retry. Sats that paid no payment are forwarded the same way (a `LockedToken` with no payment ids), and leaving the shop stays blocked while the device holds any sats or a forward is on its way.
   - On the owner's device the proofs stay in the owner's wallet.
 
 ## History
@@ -84,6 +84,8 @@ One install is either an **owner** (it has a `shop` row) or an **employee** (it 
 ## Owner wallet
 
 - Shows the balance in sats and in CZK. Locked tokens from employees are received automatically (unlocked with the owner key).
+- Activity lists what actually moved: Lightning payments, Cashu receipts net of the mint's input fee (assigned or unassigned), employees' forwards, and withdrawals including every fee (shown as secondary text). Its sum equals the balance.
+- A Lightning withdrawal's review shows the most it can cost (amount, fee reserve and mint input fees, linkshu `Melt.cost`), the melt never debits more, and the withdrawal records the fee actually paid.
 - Withdraw: to a Lightning address (LNURL-pay melt), or "Send to Linky", which takes an npub or a scanned Linky profile and sends the token as a NIP-17 chat message, the way linky sends tokens.
 
 ## Settings

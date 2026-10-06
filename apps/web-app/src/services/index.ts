@@ -11,7 +11,7 @@ export type {
   Nostr,
   OutboxResultHandler,
 } from "./nostr";
-export type { EmployeeLink, LinkFailure } from "./employeeLogin";
+export type { EmployeeLink, LinkFailure, Publication } from "./employeeLogin";
 export { useProfileOf } from "./profiles";
 export type { ProfileLookup, ProfileSummary } from "./profiles";
 export { useCzkRate } from "./rates";

@@ -5,6 +5,7 @@ import {
   cashuRequestMint,
   CzkAmount,
   generateVariableSymbol,
+  isOpenBitcoinRequest,
   PaymentId,
   PaymentMethod,
   PaymentStatus,
@@ -214,11 +215,16 @@ export const paymentMintOf = (payment: Payment): string | null =>
     ? null
     : cashuRequestMint(payment.paymentRequest);
 
-/** Unpaid payments whose Cashu request a token can still settle. */
-export const openBitcoinPayments = (payments: readonly Payment[]) =>
+/** This device's recent unpaid Bitcoin requests, also cancelled ones: a token can still pay each. */
+export const openBitcoinPayments = (
+  payments: readonly Payment[],
+  now = Date.now(),
+) =>
   payments.flatMap((payment): OpenPayment[] => {
     const mintUrl = paymentMintOf(payment);
-    return payment.status === "paid" || payment.sats === null || !mintUrl
+    return payment.sats === null ||
+      !mintUrl ||
+      !isOpenBitcoinRequest(payment, now)
       ? []
       : [{ ...payment, mintUrl, sats: payment.sats, payment }];
   });

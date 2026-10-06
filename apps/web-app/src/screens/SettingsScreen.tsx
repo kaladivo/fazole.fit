@@ -19,12 +19,11 @@ import { shortNpub } from "@platitprosim/core";
 import type { Pubkey } from "@linky-fit/linkstr";
 import { useAppServices, useProfileOf } from "../services";
 import {
-  needsForward,
   resetDevice,
   saveSetting,
   saveShop,
   useAppEvolu,
-  usePayments,
+  useHoldsShopFunds,
   useStoredMembership,
 } from "../storage";
 import type { ShopProfile } from "../storage";
@@ -56,7 +55,7 @@ export function SettingsScreen({ profile }: { profile: ShopProfile }) {
   const close = () => setDialog(null);
   const owner = profile.role === "owner";
   const membership = useStoredMembership();
-  const forwarding = usePayments().some(needsForward);
+  const forwarding = useHoldsShopFunds();
 
   return (
     <Screen width="narrow" testID="settings-screen">

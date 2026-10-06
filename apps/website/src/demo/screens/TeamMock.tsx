@@ -6,167 +6,203 @@ import {
   ListRow,
   Pill,
   QRCode,
+  Row,
   ScannerFrame,
-  Section,
+  Screen,
   Stack,
   Text,
   TextField,
-  TopBar,
 } from "@platitprosim/ui";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useSite } from "../../site/site";
-import { DemoBody, DemoScreen } from "../chrome";
-import { ownerId, scannedProfile, useDemo } from "../store";
-import { paidTotal } from "../labels";
-import { formatCzk } from "../money";
-
-type Step = "list" | "scanning" | "found";
+import { DemoScreen, DemoSheet } from "../chrome";
+import { npubIn, shortNpub } from "../labels";
+import { scannedProfile, useDemo } from "../store";
 
 /** How long the demo camera takes to "read" the profile QR. */
 const scanTakesMs = 1800;
 
-function ScanStep({ onFound }: { onFound: () => void }) {
+/** Stands in for the camera: it "reads" the demo employee's profile QR. */
+function DemoScanner({ onScan }: { onScan: (text: string) => void }) {
   const t = useSite().copy.demo;
   const [detected, setDetected] = useState(false);
   useEffect(() => {
     const timer = setTimeout(
-      () => (detected ? onFound() : setDetected(true)),
+      () => (detected ? onScan(scannedProfile.link) : setDetected(true)),
       detected ? scanTakesMs / 3 : scanTakesMs,
     );
     return () => clearTimeout(timer);
-  }, [detected, onFound]);
+  }, [detected, onScan]);
   return (
-    <Stack flex={1} justifyContent="center">
-      <ScannerFrame
-        accessibilityLabel={t.scanner}
-        hint={t.scanHint}
-        detected={detected}
-      >
-        <Stack scale={0.8}>
-          <QRCode value={scannedProfile.link} accessibilityLabel={t.scanner} />
-        </Stack>
-      </ScannerFrame>
-    </Stack>
-  );
-}
-
-function FoundStep({ onAdd }: { onAdd: (name: string) => void }) {
-  const t = useSite().copy.demo;
-  const [name, setName] = useState(scannedProfile.name);
-  return (
-    <Card gap="$lg" alignItems="center">
-      <Avatar name={name || scannedProfile.name} size="lg" />
-      <Pill label={t.profileFound} tone="success" icon="CircleCheck" />
-      <Stack alignSelf="stretch">
-        <TextField label={t.name} value={name} onChangeText={setName} />
+    <ScannerFrame
+      accessibilityLabel={t.scanner}
+      hint={t.scanHint}
+      detected={detected}
+    >
+      <Stack scale={0.8}>
+        <QRCode value={scannedProfile.link} accessibilityLabel={t.scanner} />
       </Stack>
-      <Button
-        size="lg"
-        icon="UserPlus"
-        alignSelf="stretch"
-        disabled={name.trim() === ""}
-        onPress={() => onAdd(name.trim())}
-      >
-        {t.add}
-      </Button>
-    </Card>
+    </ScannerFrame>
   );
 }
 
-/** The owner's team: employees with today's takings, added by scanning a Linky profile. */
-export function TeamMock({ tabBar }: { tabBar: ReactNode }) {
-  const { copy, locale } = useSite();
-  const t = copy.demo;
-  const { payments, employees, addEmployee } = useDemo();
-  const [step, setStep] = useState<Step>("list");
-  const takings = (id: string) =>
-    t.todayTotal(
-      formatCzk(
-        paidTotal(payments.filter((payment) => payment.createdBy === id)),
-        locale,
-      ),
-    );
+function AddEmployeeSheet({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const t = useSite().copy.demo;
+  const { employees, addEmployee } = useDemo();
+  const [input, setInput] = useState("");
+  const [name, setName] = useState<string>();
+  const [scanning, setScanning] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const npub = npubIn(input);
+  const profileName =
+    npub === scannedProfile.npub ? scannedProfile.name : undefined;
+  const shownName = name ?? profileName ?? "";
+  const error =
+    npub === undefined
+      ? t.linkyProfileInvalid
+      : employees.some((employee) => employee.npub === npub)
+        ? t.alreadyAdded
+        : undefined;
 
-  if (step !== "list") {
-    return (
-      <DemoScreen>
-        <TopBar
-          title={t.addEmployee}
-          leading={
+  const reset = () => {
+    setInput("");
+    setName(undefined);
+    setScanning(false);
+    setSubmitted(false);
+    onClose();
+  };
+  const save = () => {
+    setSubmitted(true);
+    if (npub === undefined || error !== undefined) return;
+    addEmployee(shownName.trim() || shortNpub(npub), npub);
+    reset();
+  };
+
+  return (
+    <DemoSheet open={open} onClose={reset} title={t.addEmployee}>
+      <Stack gap="$lg" paddingTop="$sm">
+        <Text muted>{t.addEmployeeDescription}</Text>
+        {scanning ? (
+          <DemoScanner
+            onScan={(text) => {
+              setInput(text);
+              setName(undefined);
+              setScanning(false);
+            }}
+          />
+        ) : null}
+        <TextField
+          label={t.linkyProfile}
+          placeholder="npub1…"
+          hint={t.linkyProfileHint}
+          value={input}
+          onChangeText={(text) => {
+            setInput(text);
+            setName(undefined);
+          }}
+          error={
+            (submitted || input.trim() !== "") && error !== undefined
+              ? error
+              : undefined
+          }
+          autoCapitalize="none"
+          autoComplete="off"
+          autoCorrect={false}
+          spellCheck={false}
+          trailing={
             <IconButton
-              icon="ArrowLeft"
+              icon={scanning ? "X" : "ScanLine"}
               size="sm"
-              accessibilityLabel={copy.demo.cancel}
-              onPress={() => setStep("list")}
+              accessibilityLabel={scanning ? t.close : t.scan}
+              onPress={() => setScanning((current) => !current)}
             />
           }
         />
-        <DemoBody>
-          {step === "scanning" ? (
-            <ScanStep onFound={() => setStep("found")} />
-          ) : (
-            <FoundStep
-              onAdd={(name) => {
-                addEmployee(name);
-                setStep("list");
-              }}
+        {npub !== undefined && error === undefined ? (
+          <>
+            <Row gap="$md" alignItems="center">
+              <Avatar name={shownName || "?"} />
+              <Stack gap="$none" flex={1} minWidth={0}>
+                <Text variant="label" numberOfLines={1}>
+                  {profileName ?? t.profileMissing}
+                </Text>
+                <Text variant="caption" muted>
+                  {shortNpub(npub)}
+                </Text>
+              </Stack>
+            </Row>
+            <TextField
+              label={t.name}
+              hint={t.nameHint}
+              value={shownName}
+              onChangeText={setName}
+              onSubmitEditing={save}
             />
-          )}
-        </DemoBody>
-      </DemoScreen>
-    );
-  }
-  return (
-    <DemoScreen tabBar={tabBar}>
-      <TopBar
-        title={t.tabs.team}
-        subtitle={t.shopName}
-        trailing={
-          <IconButton
-            icon="UserPlus"
-            size="sm"
-            accessibilityLabel={t.addEmployee}
-            onPress={() => setStep("scanning")}
-          />
-        }
-      />
-      <DemoBody>
-        <Section title={t.owner}>
-          <ListRow
-            leading={<Avatar name={t.you} icon="Store" />}
-            title={t.you}
-            description={takings(ownerId)}
-          />
-        </Section>
-        <Section title={t.tabs.team}>
-          <Stack gap="$none">
-            {employees.map((employee) => (
-              <ListRow
-                key={employee.id}
-                leading={<Avatar name={employee.name} />}
-                title={employee.name}
-                description={takings(employee.id)}
-                trailing={
-                  employee.addedToday ? (
-                    <Pill label={t.addedToday} tone="success" />
-                  ) : undefined
-                }
-              />
-            ))}
-          </Stack>
-        </Section>
-        <Button
-          variant="secondary"
-          icon="ScanLine"
-          onPress={() => setStep("scanning")}
-        >
-          {t.addEmployee}
+          </>
+        ) : null}
+        <Button size="lg" icon="UserPlus" onPress={save}>
+          {t.addToTeam}
         </Button>
-        <Text variant="caption" muted textAlign="center">
-          {t.scanHint}
+      </Stack>
+    </DemoSheet>
+  );
+}
+
+/** The owner's team, like the app's: each employee's device status, added by scanning a Linky profile. */
+export function TeamMock({ tabBar }: { tabBar: ReactNode }) {
+  const t = useSite().copy.demo;
+  const { employees } = useDemo();
+  const [adding, setAdding] = useState(false);
+  return (
+    <DemoScreen
+      tabBar={tabBar}
+      overlay={
+        <AddEmployeeSheet open={adding} onClose={() => setAdding(false)} />
+      }
+    >
+      <Screen width="narrow">
+        <Row justifyContent="space-between" alignItems="center">
+          <Text variant="heading" role="heading">
+            {t.tabs.team}
+          </Text>
+          <Button
+            size="sm"
+            variant="secondary"
+            icon="UserPlus"
+            onPress={() => setAdding(true)}
+          >
+            {t.addEmployee}
+          </Button>
+        </Row>
+        <Card paddingVertical="$sm" gap="$none">
+          {employees.map((employee) => (
+            <ListRow
+              key={employee.id}
+              leading={<Avatar name={employee.name} />}
+              title={employee.name}
+              description={shortNpub(employee.npub)}
+              meta={
+                employee.linked ? (
+                  <Pill label={t.deviceLinked} tone="success" dot />
+                ) : (
+                  <Pill label={t.deviceWaiting} tone="warning" dot />
+                )
+              }
+              chevron
+            />
+          ))}
+        </Card>
+        <Text variant="caption" muted>
+          {t.teamHint}
         </Text>
-      </DemoBody>
+      </Screen>
     </DemoScreen>
   );
 }

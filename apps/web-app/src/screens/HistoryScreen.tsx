@@ -140,6 +140,7 @@ export function HistoryScreen({ profile }: { profile: ShopProfile }) {
           if (!open) setSelectedId(null);
         }}
         title={t("historyDetail")}
+        closeLabel={t("close")}
       >
         {selected ? (
           <Stack gap="$lg" paddingTop="$sm">
@@ -210,6 +211,7 @@ export function HistoryScreen({ profile }: { profile: ShopProfile }) {
         open={choosing}
         onOpenChange={setChoosing}
         title={t("historyFilterTitle")}
+        closeLabel={t("close")}
       >
         <Card paddingVertical="$sm" gap="$none" testID="history-filter-sheet">
           {filters.map((value) => (

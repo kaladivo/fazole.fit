@@ -1,5 +1,12 @@
-import { Amount, parseMintUrl, Topup, TopupDraft } from "@linky-fit/linkshu";
+import {
+  Amount,
+  Mints,
+  parseMintUrl,
+  Topup,
+  TopupDraft,
+} from "@linky-fit/linkshu";
 import type {
+  MintUrl,
   TopupError,
   TopupHandle,
   TopupQuote,
@@ -9,19 +16,25 @@ import {
   buildCashuRequest,
   czkToSats,
   matchIncomingCashu,
+  minimumBitcoinSats,
   readIncomingCashu,
+  uniqueRequestSats,
+  wholeCzkFor,
 } from "@platitprosim/core";
+import type { CzkAmount, IncomingCashu } from "@platitprosim/core";
 import { Effect, Either, Exit, Scope } from "effect";
 import {
   attachBitcoinRequest,
   bitcoinRequestOf,
   clearBitcoinRequest,
   completePayment,
+  hasReceipt,
   loadPayment,
   loadPaymentPaidBy,
   loadPayments,
   loadPaymentWithQuote,
   openBitcoinPayments,
+  recordReceipt,
 } from "../storage";
 import type { AppEvolu, Payment } from "../storage";
 import type { InboxHandler, Nostr } from "./nostr";
@@ -29,8 +42,13 @@ import { serialQueue } from "./serial";
 import type { Wallet } from "./wallet";
 import { isTransientReceiveError } from "./wallet";
 
-/** Why a payment could not get its Bitcoin leg; both are worth a retry. */
-export type BitcoinRequestFailure = "rate-unavailable" | "mint-unreachable";
+/**
+ * Why a payment could not get its Bitcoin leg: a missing rate or mint is
+ * worth a retry, an amount below what the mint's fees allow is not.
+ */
+export type BitcoinRequestFailure =
+  | { readonly reason: "rate-unavailable" | "mint-unreachable" }
+  | { readonly reason: "below-minimum"; readonly minimumCzk: CzkAmount };
 
 /**
  * Takes Bitcoin payments on this device: a Lightning quote and a Cashu
@@ -39,8 +57,9 @@ export type BitcoinRequestFailure = "rate-unavailable" | "mint-unreachable";
 export interface BitcoinPayments {
   /**
    * Gives a payment its Bitcoin leg unless it has one: the CZK amount in
-   * sats at the current rate, a NUT-20 locked mint quote at `mintUrl` and
-   * a NUT-18 request to this device, stored on the payment row.
+   * sats at the current rate, made unique among the open requests, a NUT-20
+   * locked mint quote at `mintUrl` and a NUT-18 request to this device,
+   * stored on the payment row.
    */
   readonly request: (
     payment: Payment,
@@ -124,6 +143,13 @@ export const createBitcoinPayments = ({
     }, RESUME_DELAY_MS);
   };
 
+  const inputFeePpkAt = async (mint: MintUrl) => {
+    const info = await wallet.run(
+      Effect.flatMap(Mints, (mints) => mints.info(mint)),
+    );
+    return Either.isRight(info) ? info.right.inputFeePpk : null;
+  };
+
   const startRequest = async (
     payment: Payment,
     shop: { readonly mintUrl: string; readonly name: string },
@@ -132,16 +158,28 @@ export const createBitcoinPayments = ({
     const fresh = await loadPayment(evolu, payment.id);
     if (fresh === null || bitcoinRequestOf(fresh) !== null) return null;
     const rate = await czkPerBtc();
-    if (rate === null) return "rate-unavailable";
+    if (rate === null) return { reason: "rate-unavailable" };
     const mint = parseMintUrl(shop.mintUrl);
-    if (mint === null) return "mint-unreachable";
-    const sats = czkToSats(payment.amountCzk, rate);
-    const started = await serially(() =>
-      runtime.runPromise(
+    if (mint === null) return { reason: "mint-unreachable" };
+    const priced = czkToSats(payment.amountCzk, rate);
+    const minimum = minimumBitcoinSats(await inputFeePpkAt(mint));
+    if (priced < minimum) {
+      return {
+        reason: "below-minimum",
+        minimumCzk: wholeCzkFor(minimum, rate),
+      };
+    }
+    // Serial, so two requests created at once never pick the same amount.
+    const started = await serially(async () => {
+      const sats = uniqueRequestSats(
+        priced,
+        openBitcoinPayments(await loadPayments(evolu)),
+      );
+      const topup = await runtime.runPromise(
         Effect.either(
           Scope.extend(
-            Effect.flatMap(Topup, (topup) =>
-              topup.start(
+            Effect.flatMap(Topup, (topups) =>
+              topups.start(
                 new TopupDraft({
                   mint,
                   amount: Amount.make(sats),
@@ -153,32 +191,39 @@ export const createBitcoinPayments = ({
             scope,
           ),
         ),
-      ),
-    );
-    if (started === undefined) return "mint-unreachable";
+      );
+      if (Either.isLeft(topup)) return topup;
+      const { quote } = topup.right;
+      await attachBitcoinRequest(evolu, payment.id, {
+        sats,
+        czkPerBtc: rate,
+        quoteId: quote.quoteId,
+        invoice: quote.invoice,
+        paymentRequest: buildCashuRequest({
+          sats,
+          mintUrl: mint,
+          deviceNprofile: nostr.nprofile,
+          paymentId: payment.id,
+        }),
+      });
+      return topup;
+    });
+    if (started === undefined) return { reason: "mint-unreachable" };
     if (Either.isLeft(started)) {
       console.warn("payment quote failed", started.left);
-      return "mint-unreachable";
+      return { reason: "mint-unreachable" };
     }
-    const { quote } = started.right;
-    await attachBitcoinRequest(evolu, payment.id, {
-      sats,
-      czkPerBtc: rate,
-      quoteId: quote.quoteId,
-      invoice: quote.invoice,
-      paymentRequest: buildCashuRequest({
-        sats,
-        mintUrl: mint,
-        deviceNprofile: nostr.nprofile,
-        paymentId: payment.id,
-      }),
-    });
     watch(started.right);
     return null;
   };
 
   const requests = new Map<string, Promise<BitcoinRequestFailure | null>>();
 
+  /**
+   * Receives a token and records what it put into the wallet: it pays the
+   * payment it matches, also a cancelled one, and one that matches none is
+   * kept as an unassigned receipt.
+   */
   const receiveChatToken: InboxHandler = async (event) => {
     if (event._tag !== "ChatMessageReceived" || event.editOf !== null) return;
     const text =
@@ -189,28 +234,53 @@ export const createBitcoinPayments = ({
           : null;
     const incoming = text === null ? null : readIncomingCashu(text);
     if (text === null || incoming === null) return;
-    const cashuReceiveId = await unclaimedReceiveOf(text);
-    if (cashuReceiveId === null) return;
-    const paid = matchIncomingCashu(
-      incoming,
-      openBitcoinPayments(await loadPayments(evolu)),
-    );
-    if (paid) await completePayment(evolu, paid.payment, { cashuReceiveId });
+    const received = await unrecordedReceiveOf(text, incoming);
+    if (received === null) return;
+    const { operationId, sats } = received;
+    const paidBefore = await loadPaymentPaidBy(evolu, operationId);
+    const paid =
+      paidBefore ??
+      matchIncomingCashu(
+        incoming,
+        openBitcoinPayments(await loadPayments(evolu)),
+      )?.payment ??
+      null;
+    // The payment first: a recorded receipt marks the token handled.
+    if (paid && !paidBefore) {
+      await completePayment(evolu, paid, { cashuReceiveId: operationId });
+    }
+    await recordReceipt(evolu, {
+      operationId,
+      kind: "cashu",
+      sats,
+      ...(paid ? { paymentId: paid.id } : {}),
+    });
   };
 
-  /** Receives the text; the receive that holds its sats, `null` when they are not there or already paid a payment. */
-  const unclaimedReceiveOf = async (text: string): Promise<string | null> => {
+  /** Receives the text; the receive holding its sats, `null` when they are not there or already recorded. */
+  const unrecordedReceiveOf = async (
+    text: string,
+    incoming: IncomingCashu,
+  ): Promise<{
+    readonly operationId: string;
+    readonly sats: number;
+  } | null> => {
     const received = await wallet.receive(text);
-    if (Either.isRight(received)) return received.right.operationId;
+    if (Either.isRight(received)) {
+      return {
+        operationId: received.right.operationId,
+        sats: received.right.amount,
+      };
+    }
     // Unacknowledged, so the next session receives it again.
     if (isTransientReceiveError(received.left)) throw received.left;
     if (received.left._tag !== "TokenAlreadyKnown") return null;
-    // A replay, such as after a reload between receiving and completing the payment.
+    // A replay, such as after a reload between receiving and recording; its net amount is gone, so the face value stands in.
     const { operationId } = received.left;
     return operationId !== null &&
-      (await wallet.isReceived(operationId)) &&
-      (await loadPaymentPaidBy(evolu, operationId)) === null
-      ? operationId
+      !(await hasReceipt(evolu, operationId)) &&
+      (await wallet.isReceived(operationId))
+      ? { operationId, sats: incoming.amount }
       : null;
   };
 

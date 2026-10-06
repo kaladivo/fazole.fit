@@ -1,8 +1,13 @@
 import { CzkAmount, Sats } from "@platitprosim/core";
 import { describe, expect, it } from "vitest";
-import type { Payment, Withdrawal } from "../storage";
-import { PaymentRowId, WithdrawalId } from "../storage/schema";
-import { parseSats, walletActivity } from "./activity";
+import type { Payment, Receipt, Withdrawal } from "../storage";
+import {
+  EmployeeId,
+  PaymentRowId,
+  ReceiptId,
+  WithdrawalId,
+} from "../storage/schema";
+import { balanceChange, parseSats, walletActivity } from "./activity";
 
 const payment = (id: string, overrides: Partial<Payment>): Payment => ({
   id: PaymentRowId.orThrow(id.padEnd(22, "A")),
@@ -46,31 +51,73 @@ const withdrawal = (
   ...overrides,
 });
 
+const receipt = (id: string, overrides: Partial<Receipt>): Receipt => ({
+  id: ReceiptId.orThrow(id.padEnd(22, "A")),
+  kind: "cashu",
+  sats: 99,
+  receivedAtMs: 1_000,
+  paymentId: null,
+  employeeId: null,
+  ...overrides,
+});
+
 describe("walletActivity", () => {
-  it("lists paid Bitcoin payments and withdrawals, newest first", () => {
+  it("lists what reached and left the wallet, newest first", () => {
+    const cashu = payment("Cashu", { method: "cashu", paidAtMs: 1_000 });
     const items = walletActivity(
       [
         payment("Paid", { paidAtMs: 3_000 }),
         payment("Bank", { method: "bank", paidAtMs: 4_000 }),
         payment("Pending", { status: "pending", paidAtMs: null }),
-        payment("Cashu", { method: "cashu", paidAtMs: 1_000 }),
+        payment("Employee", {
+          employeeId: EmployeeId.orThrow("Employee".padEnd(22, "A")),
+          paidAtMs: 5_000,
+        }),
+        cashu,
+      ],
+      [
+        receipt("Paid", { paymentId: cashu.id, receivedAtMs: 1_000 }),
+        receipt("Stray", { sats: 30, receivedAtMs: 6_000 }),
       ],
       [withdrawal("Out", { createdAtMs: 2_000, feeSats: 2, status: "done" })],
     );
-    expect(items.map((item) => [item.kind, item.atMs, item.sats])).toEqual([
-      ["payment", 3_000, 100],
-      ["withdrawal", 2_000, 42],
-      ["payment", 1_000, 100],
+    expect(
+      items.map((item) => [item.kind, item.atMs, item.sats, item.feeSats]),
+    ).toEqual([
+      ["receipt", 6_000, 30, 0],
+      ["lightning", 3_000, 100, 0],
+      ["withdrawal", 2_000, 42, 2],
+      ["receipt", 1_000, 99, 1],
     ]);
+  });
+
+  it("adds up to the balance the movements left", () => {
+    const items = walletActivity(
+      [payment("Paid", { sats: Sats.make(500) })],
+      [receipt("Forward", { kind: "forward", sats: 249 })],
+      [
+        withdrawal("Linky", { amountSats: 100, feeSats: 1, status: "pending" }),
+        withdrawal("Ln", {
+          kind: "lightning",
+          amountSats: 533,
+          feeSats: 2,
+          status: "done",
+        }),
+        withdrawal("Failed", { amountSats: 50, status: "failed" }),
+      ],
+    );
+    expect(items.reduce((sum, item) => sum + balanceChange(item), 0)).toBe(
+      500 + 249 - 101 - 535,
+    );
   });
 
   it("keeps only the newest items", () => {
     const payments = [1, 2, 3].map((n) =>
       payment(`P${n}`, { paidAtMs: n * 1_000 }),
     );
-    expect(walletActivity(payments, [], 2).map((item) => item.atMs)).toEqual([
-      3_000, 2_000,
-    ]);
+    expect(
+      walletActivity(payments, [], [], 2).map((item) => item.atMs),
+    ).toEqual([3_000, 2_000]);
   });
 });
 

@@ -8,9 +8,9 @@ export const cs = {
   save: "Uložit",
 
   welcomeSetupShop: "Založit obchod",
-  welcomeSetupShopDescription: "Jsem majitel a chci přijímat platby.",
-  welcomeEmployee: "Jsem zaměstnanec",
-  welcomeEmployeeDescription: "Přihlásím se přes Linky.",
+  welcomeSetupShopDescription: "Chci přijímat platby ve svém obchodě.",
+  welcomeEmployee: "Přihlásit se",
+  welcomeEmployeeDescription: "Pro zaměstnance, přes Linky.",
   welcomeRestore: "Mám záložní frázi",
   welcomeRestoreDescription: "Obnovím obchod na tomto zařízení.",
 
@@ -22,13 +22,13 @@ export const cs = {
   shopNameHint: "Zákazník ho uvidí ve zprávě pro příjemce.",
   shopNameRequired: "Zadejte název obchodu.",
   bankAccount: "Číslo účtu",
-  bankAccountPlaceholder: "123456789/0800",
+  bankAccountPlaceholder: "2000145399/0800",
   bankAccountHint: "Ve tvaru [předčíslí-]číslo/kód banky.",
   bankAccountValid: "{bank} · {iban}",
   bankAccountInvalidFormat:
-    "Zadejte účet ve tvaru číslo/kód banky, např. 123456789/0800.",
+    "Zadejte účet ve tvaru číslo/kód banky, např. 2000145399/0800.",
   bankAccountInvalidChecksum:
-    "Toto číslo účtu neexistuje. Zkontrolujte překlepy.",
+    "Neplatné číslo účtu (nesedí kontrolní součet). Zkontrolujte překlepy.",
   bankAccountUnknownBank: "Neznámý kód banky.",
   setupContinue: "Pokračovat",
 
@@ -55,12 +55,12 @@ export const cs = {
     "Stahuji vaše data ze synchronizačního serveru. Nechte aplikaci otevřenou.",
   restoringSlowTitle: "Zatím nic nedorazilo",
   restoringSlowDescription:
-    "Zkontrolujte připojení k internetu. Pokud tato fráze žádný obchod nezaložila, není co obnovit.",
+    "Zkontrolujte připojení k internetu. Pokud k této frázi žádný obchod nepatří, není co obnovit.",
   restoringStartOver: "Začít znovu",
 
   employeeTitle: "Přihlásit se přes Linky",
   employeeDescription:
-    "Přihlaste se svým profilem v Linky. Majitel obchodu vás pak přidá do týmu a toto zařízení začne přijímat platby pro jeho obchod.",
+    "Přihlaste se svým profilem v Linky. Majitel obchodu vás pak přidá do týmu a toto zařízení začne přijímat platby.",
   employeeLogin: "Přihlásit se přes Linky",
 
   navigation: "Hlavní sekce",
@@ -93,7 +93,7 @@ export const cs = {
   paymentNew: "Nová platba",
   paymentNotFound: "Platba nenalezena",
   paymentNotFoundDescription:
-    "Možná se ještě nesynchronizovala do tohoto zařízení.",
+    "Možná se ještě nesynchronizovala na toto zařízení.",
   paymentClosed: "Tato platba už není otevřená.",
   backToTerminal: "Zpět na terminál",
 
@@ -113,12 +113,12 @@ export const cs = {
   historyStatus: "Stav",
   historyCreated: "Vytvořeno",
   historyPaidAt: "Zaplaceno",
-  historyCreatedBy: "Vytvořil",
+  historyCreatedBy: "Obsluha",
   historyShowQr: "Zobrazit QR kód",
 
   employeesEmptyTitle: "Zatím žádní zaměstnanci",
   employeesEmptyDescription:
-    "Přidejte zaměstnance naskenováním jeho profilu v Linky.",
+    "Zaměstnance přidáte naskenováním profilu v Linky.",
   employeesAdd: "Přidat zaměstnance",
 
   walletBalance: "Zůstatek",
@@ -169,6 +169,9 @@ export const cs = {
   paymentWaiting: "Čekám na platbu…",
   bitcoinRateUnavailable: "Kurz bitcoinu není dostupný",
   bitcoinMintUnreachable: "Mincovna neodpovídá",
+  bitcoinMinimum: "Bitcoinem od {amount}",
+  bitcoinMinimumHint:
+    "Menší částku nechte zaplatit bankou, poplatky mincovny by ji skoro celou spotřebovaly.",
   bitcoinUnavailableHint:
     "Zkuste to znovu, nebo nechte zákazníka zaplatit bankou.",
   walletBalanceCzk: "≈ {amount} Kč",
@@ -179,6 +182,10 @@ export const cs = {
   activityIn: "+{sats} sat",
   activityOut: "−{sats} sat",
   activityRow: "{date} · {label}",
+  activityRowFee: "{row} · poplatek {fee} sat",
+  receiptUnassigned: "Nepřiřazená platba",
+  receiptForwarded: "Přeposláno od: {name}",
+  receiptForwardedDevice: "Přeposláno ze zařízení zaměstnance",
   withdrawalLightning: "Výběr přes Lightning",
   withdrawalLinky: "Posláno do Linky",
   withdrawalPending: "Zpracovává se",
@@ -216,9 +223,9 @@ export const cs = {
   withdrawInvoiceHint: "Faktura na {sats} sat",
 
   employeesHint:
-    "Zaměstnanec se přihlásí přes Linky na svém zařízení a to se propojí samo.",
+    "Jakmile se zaměstnanec na svém zařízení přihlásí přes Linky, zařízení se propojí samo.",
   employeesAddDescription:
-    "Naskenujte QR kód profilu zaměstnance v Linky, nebo vložte jeho npub.",
+    "Naskenujte QR kód profilu v Linky, nebo vložte npub.",
   employeesAddSubmit: "Přidat do týmu",
   employeesAlreadyAdded: "Tento zaměstnanec už v týmu je.",
   employeesOwnKey: "Tohle je klíč tohoto zařízení.",
@@ -229,28 +236,28 @@ export const cs = {
   employeeEdit: "Zaměstnanec",
   employeeDeviceWaiting: "Čeká na přihlášení",
   employeeDeviceWaitingHint:
-    "Až se zaměstnanec přihlásí přes Linky na svém zařízení, propojí se samo.",
+    "Až se zaměstnanec na svém zařízení přihlásí přes Linky, zařízení se propojí samo.",
   employeeDeviceActive: "Propojeno",
   employeeDevicesActive: "Propojeno · {count} zařízení",
   employeeRemove: "Odebrat z týmu",
-  employeeRemoveTitle: "Odebrat {name}?",
+  employeeRemoveTitle: "Odebrat zaměstnance?",
   employeeRemoveDescription:
-    "Jeho zařízení přestane přijímat platby pro váš obchod. Jeho platby v historii zůstanou.",
+    "Zařízení tohoto zaměstnance přestanou přijímat platby pro váš obchod. Historie plateb zůstane beze změny.",
   employeeRemoveConfirm: "Odebrat",
 
   linkApproveTitle: "Potvrďte přihlášení v Linky",
   linkApproveDescription:
-    "Linky se otevřelo v nové záložce. Potvrďte v něm přihlášení a propojení tohoto zařízení.",
+    "Aplikace Linky se otevřela v nové záložce. Potvrďte v ní přihlášení a propojení tohoto zařízení.",
   linkOpenLinky: "Otevřít Linky",
   linkOtherDevice: "Máte Linky na jiném telefonu? Naskenujte tento kód.",
   linkQr: "QR kód pro přihlášení přes Linky",
   linkCopy: "Kopírovat odkaz",
   linkCopied: "Odkaz zkopírován",
   linkWaiting: "Čekám na Linky…",
-  linkFailedTimeout: "Linky neodpovědělo včas",
-  linkFailedRefused: "Linky přihlášení odmítlo",
-  linkFailedUnreachable: "Nedaří se spojit s relayi",
-  linkFailedInvalid: "Linky vrátilo neplatné potvrzení",
+  linkFailedTimeout: "Z Linky nepřišla včas odpověď",
+  linkFailedRefused: "Přihlášení bylo v Linky odmítnuto",
+  linkFailedUnreachable: "Nedaří se spojit s relay servery",
+  linkFailedInvalid: "Z Linky přišlo neplatné potvrzení",
   linkFailedHint: "Zkuste se přihlásit znovu.",
   employeeLinkyAccount: "Váš účet v Linky",
   employeeWaitingPill: "Přihlášeno",
@@ -258,8 +265,9 @@ export const cs = {
   employeeWaitingDescription:
     "Požádejte majitele obchodu, ať vás přidá do týmu podle tohoto profilu v Linky.",
   employeeWaitingCancel: "Zrušit přihlášení",
-  employeePublishFailed: "Majitel vás zatím nevidí",
-  employeePublishFailedHint: "Nepodařilo se spojit s relayi.",
+  employeePublishRetrying: "Stále se spojuji s relay servery",
+  employeePublishRetryingHint:
+    "Zkouším to znovu, aby vás majitel našel. Nechte aplikaci otevřenou.",
   employeeJoinTitle: "Připojit se k obchodu {shop}?",
   employeeJoinDescription:
     "Platby, které přijmete, půjdou na účet a do peněženky tohoto obchodu.",
@@ -268,9 +276,9 @@ export const cs = {
   employeeJoinAs: "Vaše jméno",
   employeeJoin: "Připojit se",
   employeeDecline: "Odmítnout",
-  employeeRemovedTitle: "Majitel vás odebral z obchodu {shop}",
+  employeeRemovedTitle: "Obchod {shop} vás odebral z týmu",
   employeeRemovedDescription:
-    "Platby, které jste přijali, má majitel ve své historii. Začít znovu vymaže toto zařízení.",
+    "Vaše přijaté platby zůstávají v historii majitele. Tlačítkem Začít znovu toto zařízení vymažete.",
   employeeRemovedStartOver: "Začít znovu",
   employeeForwardingFunds: "Posílám zbývající peníze majiteli…",
 

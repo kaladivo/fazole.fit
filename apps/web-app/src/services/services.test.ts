@@ -52,6 +52,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   addEmployee,
   attachBitcoinRequest,
+  cancelPayment,
   clearBitcoinRequest,
   completePayment,
   createPayment,
@@ -60,6 +61,7 @@ import {
   loadEmployees,
   loadIdentity,
   loadPayments,
+  loadReceipts,
   loadWithdrawals,
   saveShop,
   upsertReportedPayment,
@@ -106,9 +108,9 @@ const tokenOf = (amount: number) =>
     }),
   );
 
-const receipt = (amount: number) =>
+const receipt = (amount: number, operationId = "receive-1") =>
   Schema.decodeUnknownSync(ReceiveReceipt)({
-    operationId: "receive-1",
+    operationId,
     tokenText: tokenOf(amount),
     mint,
     unit: "sat",
@@ -223,7 +225,7 @@ describe("BitcoinPayments.request", () => {
     if (!payment) throw new Error("no payment");
     expect(
       await payments.request(payment, { mintUrl: mint, name: "Kavárna" }),
-    ).toBe("rate-unavailable");
+    ).toEqual({ reason: "rate-unavailable" });
     expect((await paymentById(evolu, id))?.quoteId).toBeNull();
   });
 
@@ -247,7 +249,30 @@ describe("BitcoinPayments.request", () => {
         mintUrl: "http://127.0.0.1:9",
         name: "Kavárna",
       }),
-    ).toBe("mint-unreachable");
+    ).toEqual({ reason: "mint-unreachable" });
+  });
+
+  it("offers no Bitcoin below the amount the mint's fees allow", async () => {
+    const { evolu, wallet } = await setup();
+    const id = await createPayment(evolu, {
+      amountCzk: CzkAmount.make(1),
+      createdBy: makeIdentity().pubkey,
+    });
+    const payments = createBitcoinPayments({
+      evolu,
+      nostr: fakeNostr().nostr,
+      wallet,
+      czkPerBtc: async () => 2_500_000,
+    });
+    const payment = await paymentById(evolu, id);
+    if (!payment) throw new Error("no payment");
+    expect(
+      await payments.request(payment, {
+        mintUrl: "http://127.0.0.1:9",
+        name: "Kavárna",
+      }),
+    ).toEqual({ reason: "below-minimum", minimumCzk: 100 });
+    expect((await paymentById(evolu, id))?.sats).toBeNull();
   });
 
   it("keeps the leg a payment already has, even when given a stale row", async () => {
@@ -317,6 +342,93 @@ describe("tokens sent to the device", () => {
       status: "paid",
       method: "cashu",
     });
+  });
+
+  it("records what reached the wallet, net of the mint's fee", async () => {
+    const { evolu, handler, id } = await withHandler(() =>
+      Either.right(receipt(99)),
+    );
+    await handler(
+      chatMessage(new TokenBody({ token: CashuTokenText.make(tokenOf(100)) })),
+      "live",
+    );
+    expect(await loadReceipts(evolu)).toMatchObject([
+      { kind: "cashu", sats: 99, paymentId: id },
+    ]);
+  });
+
+  it("pays a payment the merchant cancelled when its token arrives late", async () => {
+    const { evolu, handler, id } = await withHandler(() =>
+      Either.right(receipt(100)),
+    );
+    const cancelled = await paymentById(evolu, id);
+    if (!cancelled) throw new Error("no payment");
+    await cancelPayment(evolu, cancelled);
+    await handler(
+      chatMessage(new TokenBody({ token: CashuTokenText.make(tokenOf(100)) })),
+      "live",
+    );
+    expect(await paymentById(evolu, id)).toMatchObject({
+      status: "paid",
+      method: "cashu",
+      paidAtMs: expect.any(Number),
+    });
+  });
+
+  it("keeps a token two requests could be paid by as an unassigned receipt", async () => {
+    const { evolu, handler, id } = await withHandler(() =>
+      Either.right(receipt(100)),
+    );
+    const twin = await pendingBitcoinPayment(evolu);
+    await handler(
+      chatMessage(new TokenBody({ token: CashuTokenText.make(tokenOf(100)) })),
+      "live",
+    );
+    expect((await paymentById(evolu, id))?.status).toBe("pending");
+    expect((await paymentById(evolu, twin))?.status).toBe("pending");
+    expect(await loadReceipts(evolu)).toMatchObject([
+      { kind: "cashu", sats: 100, paymentId: null },
+    ]);
+  });
+
+  it("never pays a payment created after its token arrived, when the token replays", async () => {
+    const { evolu, handler } = await withHandler(() =>
+      Either.right(receipt(150)),
+    );
+    const token = chatMessage(
+      new TokenBody({ token: CashuTokenText.make(tokenOf(150)) }),
+    );
+    await handler(token, "live");
+    const later = await createPayment(evolu, {
+      amountCzk: CzkAmount.make(3_750),
+      createdBy: makeIdentity().pubkey,
+    });
+    await attachBitcoinRequest(evolu, later, {
+      sats: Sats.make(150),
+      czkPerBtc: 2_500_000,
+      quoteId: "quote-2",
+      invoice,
+      paymentRequest: buildCashuRequest({
+        sats: Sats.make(150),
+        mintUrl: mint,
+        deviceNprofile: "nprofile1test",
+        paymentId: later,
+      }),
+    });
+    const replay = scriptedReceive(
+      (await setup()).wallet,
+      () => Either.left(new TokenAlreadyKnown({ operationId: receiveId })),
+      { isReceived: async () => true },
+    );
+    const fake = fakeNostr();
+    createBitcoinPayments({
+      evolu,
+      nostr: fake.nostr,
+      wallet: replay.wallet,
+      czkPerBtc: async () => 2_500_000,
+    });
+    await fake.inbox[0]?.(token, "backfill");
+    expect((await paymentById(evolu, later))?.status).toBe("pending");
   });
 
   it("matches a NUT-18 payload in a text message by its request id", async () => {
@@ -484,7 +596,7 @@ describe("LockedToken messages", () => {
     expect(calls).toEqual([{ text: tokenOf(100), unlock: true }]);
   });
 
-  it("marks every payment one token carried, so the wallet lists each of them", async () => {
+  it("marks every payment one token carried, and lists the token once in the wallet", async () => {
     const { evolu, device, deliver } = await ownerWithReports();
     await deliver(device, lockedToken(["p1", "p2"]));
     const payments = await loadPayments(evolu);
@@ -492,7 +604,16 @@ describe("LockedToken messages", () => {
       expect.any(Number),
       expect.any(Number),
     ]);
-    expect(walletActivity(payments, [])).toHaveLength(2);
+    const [employee] = await loadEmployees(evolu);
+    expect(
+      walletActivity(payments, await loadReceipts(evolu), []),
+    ).toMatchObject([
+      {
+        kind: "receipt",
+        sats: 100,
+        receipt: { kind: "forward", employeeId: employee?.id },
+      },
+    ]);
   });
 
   it("creates no payment for an unknown id or sender, but still takes the funds", async () => {

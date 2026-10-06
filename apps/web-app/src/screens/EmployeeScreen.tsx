@@ -20,15 +20,14 @@ import { useEmployeeStep } from "../employee/useEmployeeStep";
 import { useI18n } from "../i18n";
 import type { I18nKey } from "../i18n";
 import { useAppServices, useProfileOf } from "../services";
-import type { LinkFailure } from "../services";
+import type { LinkFailure, Publication } from "../services";
 import {
   acceptShopOffer,
   cancelEmployeeLogin,
   declineShopOffer,
-  needsForward,
   resetDevice,
   useAppEvolu,
-  usePayments,
+  useHoldsShopFunds,
 } from "../storage";
 import type { EmployeeLogin, ShopOffer } from "../storage";
 import { BackButton } from "./BackButton";
@@ -222,23 +221,15 @@ function LinkyIdentity({ login }: { login: EmployeeLogin }) {
   );
 }
 
-type Publishing = "pending" | "done" | "failed";
-
 function WaitingForOwner({ login }: { login: EmployeeLogin }) {
   const { t } = useI18n();
   const evolu = useAppEvolu();
   const { employeeLink } = useAppServices();
-  const [publishing, setPublishing] = useState<Publishing>("pending");
-  const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    let current = true;
-    void employeeLink.publish(login).then((published) => {
-      if (current) setPublishing(published ? "done" : "failed");
-    });
-    return () => {
-      current = false;
-    };
-  }, [employeeLink, login, attempt]);
+  const [publication, setPublication] = useState<Publication>("publishing");
+  useEffect(
+    () => employeeLink.keepPublished(login, setPublication),
+    [employeeLink, login],
+  );
 
   return (
     <Stack flex={1} gap="$none">
@@ -260,18 +251,11 @@ function WaitingForOwner({ login }: { login: EmployeeLogin }) {
           </Text>
         </Stack>
         <LinkyIdentity login={login} />
-        {publishing === "failed" ? (
+        {publication === "retrying" ? (
           <Notice
             tone="warning"
-            title={t("employeePublishFailed")}
-            description={t("employeePublishFailedHint")}
-            action={{
-              label: t("retry"),
-              onPress: () => {
-                setPublishing("pending");
-                setAttempt((count) => count + 1);
-              },
-            }}
+            title={t("employeePublishRetrying")}
+            description={t("employeePublishRetryingHint")}
           />
         ) : null}
         <Button
@@ -364,7 +348,7 @@ function JoinShop({
 function RemovedFromShop({ shopName }: { shopName: string }) {
   const { t } = useI18n();
   const evolu = useAppEvolu();
-  const forwarding = usePayments().some(needsForward);
+  const forwarding = useHoldsShopFunds();
   return (
     <Screen width="narrow" centered testID="employee-removed-screen">
       <EmptyState

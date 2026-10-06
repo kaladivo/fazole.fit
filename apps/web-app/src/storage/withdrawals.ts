@@ -69,14 +69,14 @@ export const createWithdrawal = (
     ),
   );
 
-/** Links a Linky withdrawal to the linkshu send holding its token. */
+/** Links a Linky withdrawal to the linkshu send holding its token and the fee its swap paid. */
 export const attachWithdrawalSend = (
   evolu: AppEvolu,
   id: WithdrawalId,
-  operationId: string,
+  send: { readonly operationId: string; readonly feeSats: number },
 ) =>
   mutation((onComplete) =>
-    evolu.update("withdrawal", { id, operationId }, { onComplete }),
+    evolu.update("withdrawal", { id, ...send }, { onComplete }),
   );
 
 /** Closes a pending withdrawal; one that already ended is left alone. */

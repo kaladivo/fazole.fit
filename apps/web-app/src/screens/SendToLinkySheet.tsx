@@ -73,6 +73,7 @@ export function SendToLinkySheet({
         if (!next) close();
       }}
       title={t("walletSendToLinky")}
+      closeLabel={t("close")}
     >
       <Stack gap="$lg" paddingTop="$sm" testID="send-to-linky-sheet">
         {sentSats !== null ? (

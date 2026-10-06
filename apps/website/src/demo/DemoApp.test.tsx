@@ -56,12 +56,15 @@ describe("the live terminal", () => {
     for (const key of ["4", "2", "0"]) await press(container, key);
     await press(container, "Požadovat platbu");
     expect(container.textContent).toContain("123456789/0000");
-    await press(container, "Zaplaceno");
+    expect(container.textContent).toContain("Čeká");
+    await press(container, "Označit jako zaplacené");
     expect(container.querySelector('[role="status"]')?.textContent).toContain(
-      "Zaplaceno",
+      "Banka · ",
     );
     await press(container, "Nová platba");
-    expect(container.textContent).toContain("Vy · ");
+    expect(container.textContent).toContain("Požadovat platbu");
+    expect(container.textContent).toContain("420 Kč");
+    expect(container.textContent).toContain(" · Já");
   });
 
   it("confirms a Bitcoin payment by itself", async () => {
@@ -70,8 +73,21 @@ describe("the live terminal", () => {
     await press(container, "5");
     await press(container, "Požadovat platbu");
     await press(container, "Bitcoin");
-    expect(container.textContent).toContain("Čekáme na platbu");
+    expect(container.textContent).toContain("Čekám na platbu…");
     await act(async () => vi.advanceTimersByTime(5000));
-    expect(container.textContent).toContain("Lightning · 250 sat");
+    expect(container.querySelector('[role="status"]')?.textContent).toContain(
+      "Lightning · ",
+    );
+  });
+
+  it("leaves a cancelled payment in the history", async () => {
+    const container = await renderTerminal();
+    const cancelled = () => container.textContent?.split("Zrušeno").length;
+    const before = cancelled();
+    await press(container, "7");
+    await press(container, "Požadovat platbu");
+    await press(container, "Zrušit platbu");
+    expect(container.textContent).toContain("Požadovat platbu");
+    expect(cancelled()).toBe((before ?? 0) + 1);
   });
 });

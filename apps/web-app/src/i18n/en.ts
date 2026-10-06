@@ -24,13 +24,13 @@ export const en: Record<keyof typeof cs, string> = {
   shopNameHint: "Customers see it as the payment message.",
   shopNameRequired: "Enter the shop name.",
   bankAccount: "Bank account",
-  bankAccountPlaceholder: "123456789/0800",
+  bankAccountPlaceholder: "2000145399/0800",
   bankAccountHint: "As [prefix-]number/bank code.",
   bankAccountValid: "{bank} · {iban}",
   bankAccountInvalidFormat:
-    "Enter the account as number/bank code, e.g. 123456789/0800.",
+    "Enter the account as number/bank code, e.g. 2000145399/0800.",
   bankAccountInvalidChecksum:
-    "This account number doesn't exist. Check for typos.",
+    "Invalid account number (checksum). Check for typos.",
   bankAccountUnknownBank: "Unknown bank code.",
   setupContinue: "Continue",
 
@@ -62,7 +62,7 @@ export const en: Record<keyof typeof cs, string> = {
 
   employeeTitle: "Log in with Linky",
   employeeDescription:
-    "Log in with your Linky profile. The shop owner then adds you to the team, and this device starts taking payments for their shop.",
+    "Log in with your Linky profile. The shop owner then adds you to the team, and this device starts taking payments for the shop.",
   employeeLogin: "Log in with Linky",
 
   navigation: "Main sections",
@@ -166,6 +166,9 @@ export const en: Record<keyof typeof cs, string> = {
   paymentWaiting: "Waiting for payment…",
   bitcoinRateUnavailable: "The bitcoin rate is unavailable",
   bitcoinMintUnreachable: "The mint is not responding",
+  bitcoinMinimum: "Bitcoin from {amount}",
+  bitcoinMinimumHint:
+    "Take a smaller amount by bank: the mint's fees would eat most of it.",
   bitcoinUnavailableHint: "Try again, or let the customer pay by bank.",
   walletBalanceCzk: "≈ {amount} CZK",
   walletRateUnavailable: "Rate unavailable",
@@ -176,6 +179,10 @@ export const en: Record<keyof typeof cs, string> = {
   activityIn: "+{sats} sat",
   activityOut: "−{sats} sat",
   activityRow: "{date} · {label}",
+  activityRowFee: "{row} · fee {fee} sat",
+  receiptUnassigned: "Unassigned receipt",
+  receiptForwarded: "Forwarded by {name}",
+  receiptForwardedDevice: "Forwarded by an employee device",
   withdrawalLightning: "Lightning withdrawal",
   withdrawalLinky: "Sent to Linky",
   withdrawalPending: "Processing",
@@ -215,8 +222,7 @@ export const en: Record<keyof typeof cs, string> = {
 
   employeesHint:
     "An employee logs in with Linky on their device, and it links by itself.",
-  employeesAddDescription:
-    "Scan the employee's Linky profile QR code, or paste their npub.",
+  employeesAddDescription: "Scan the Linky profile QR code, or paste the npub.",
   employeesAddSubmit: "Add to the team",
   employeesAlreadyAdded: "This employee is already on the team.",
   employeesOwnKey: "That is this device's own key.",
@@ -231,9 +237,9 @@ export const en: Record<keyof typeof cs, string> = {
   employeeDeviceActive: "Linked",
   employeeDevicesActive: "Linked · {count} devices",
   employeeRemove: "Remove from the team",
-  employeeRemoveTitle: "Remove {name}?",
+  employeeRemoveTitle: "Remove this employee?",
   employeeRemoveDescription:
-    "Their devices stop taking payments for your shop. Their payments stay in the history.",
+    "Their devices stop taking payments for your shop. The payment history stays as it is.",
   employeeRemoveConfirm: "Remove",
 
   linkApproveTitle: "Approve the login in Linky",
@@ -256,8 +262,9 @@ export const en: Record<keyof typeof cs, string> = {
   employeeWaitingDescription:
     "Ask the shop owner to add you to the team with this Linky profile.",
   employeeWaitingCancel: "Cancel the login",
-  employeePublishFailed: "The owner can't see you yet",
-  employeePublishFailedHint: "Could not reach the relays.",
+  employeePublishRetrying: "Still reaching the relays",
+  employeePublishRetryingHint:
+    "Retrying so the owner can find you. Keep the app open.",
   employeeJoinTitle: "Join {shop}?",
   employeeJoinDescription:
     "Payments you take go to this shop's account and wallet.",
@@ -268,7 +275,7 @@ export const en: Record<keyof typeof cs, string> = {
   employeeDecline: "Decline",
   employeeRemovedTitle: "You were removed from {shop}",
   employeeRemovedDescription:
-    "The owner keeps the payments you took in their history. Starting over clears this device.",
+    "The owner keeps the payments you took in their history. Start over clears this device.",
   employeeRemovedStartOver: "Start over",
   employeeForwardingFunds: "Sending the remaining funds to the owner…",
 

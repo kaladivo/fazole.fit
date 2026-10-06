@@ -47,7 +47,12 @@ export const overlays: Section = {
           >
             Open sheet
           </UI.Button>
-          <UI.Sheet open={open} onOpenChange={setOpen} title="Filter">
+          <UI.Sheet
+            open={open}
+            onOpenChange={setOpen}
+            title="Filter"
+            closeLabel="Close"
+          >
             <UI.ListRow
               title="Everyone"
               icon="Users"

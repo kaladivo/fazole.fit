@@ -2,6 +2,7 @@ import {
   AppData,
   AppDataDraft,
   AppDataIdentifier,
+  AppDataQuery,
   DEVICE_AUTHORIZATION_PERMISSION,
   deviceAuthorizationTemplate,
   NostrConnectClient,
@@ -30,6 +31,9 @@ import type { Nostr } from "./nostr";
 /** Why a Linky login ended without a signed attestation. */
 export type LinkFailure = "timeout" | "refused" | "unreachable" | "invalid";
 
+/** Where the attestation stands: a relay holds it, or the device keeps trying. */
+export type Publication = "publishing" | "published" | "retrying";
+
 /** Employee install: logging in with Linky and publishing the attestation for owners to find. */
 export interface EmployeeLink {
   /**
@@ -41,9 +45,20 @@ export interface EmployeeLink {
     onUri: (uri: string) => void,
     signal: AbortSignal,
   ) => Promise<LinkFailure | null>;
-  /** Publishes the login's attestation as NIP-78 app data; `false` when no relay took it. */
-  readonly publish: (login: EmployeeLogin) => Promise<boolean>;
+  /**
+   * Keeps the login's attestation on the relays while the device waits for
+   * an owner: publishes it, and when no relay confirms, fetches it back
+   * before calling it unpublished; then publishes again periodically.
+   * Returns the stop.
+   */
+  readonly keepPublished: (
+    login: EmployeeLogin,
+    onChange: (publication: Publication) => void,
+  ) => () => void;
 }
+
+const REPUBLISH_MS = 2 * 60_000;
+const RETRY_MS = 10_000;
 
 const linkFailure = (tag: string): LinkFailure => {
   switch (tag) {
@@ -65,7 +80,7 @@ export const createEmployeeLink = ({
   readonly nostr: Nostr;
   readonly relays: readonly RelayUrl[];
 }): EmployeeLink => {
-  const publish: EmployeeLink["publish"] = (login) =>
+  const publish = (login: EmployeeLogin): Promise<boolean> =>
     nostr
       .run(
         Effect.flatMap(AppData, (appData) =>
@@ -81,10 +96,48 @@ export const createEmployeeLink = ({
       .then(
         () => true,
         (error: unknown) => {
-          console.warn("attestation not published", error);
+          console.warn("attestation publication unconfirmed", error);
           return false;
         },
       );
+
+  /** A relay holds the attestation, also when its acknowledgement was lost. */
+  const isPublished = (login: EmployeeLogin): Promise<boolean> =>
+    nostr
+      .run(
+        Effect.flatMap(AppData, (appData) =>
+          appData.fetch(
+            new AppDataQuery({
+              authors: [nostr.pubkey],
+              identifiers: [AppDataIdentifier.make(EMPLOYEE_DEVICE_IDENTIFIER)],
+            }),
+          ),
+        ),
+      )
+      .then(
+        (events) => events.some(({ content }) => content === login.attestation),
+        () => false,
+      );
+
+  const keepPublished: EmployeeLink["keepPublished"] = (login, onChange) => {
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const round = async () => {
+      const published = (await publish(login)) || (await isPublished(login));
+      if (stopped) return;
+      onChange(published ? "published" : "retrying");
+      timer = setTimeout(
+        () => void round(),
+        published ? REPUBLISH_MS : RETRY_MS,
+      );
+    };
+    onChange("publishing");
+    void round();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
+  };
 
   const sign = (
     onUri: (uri: string) => void,
@@ -113,7 +166,7 @@ export const createEmployeeLink = ({
     );
 
   return {
-    publish,
+    keepPublished,
     link: async (onUri, signal) => {
       const [first, ...rest] = relays;
       if (first === undefined) return "unreachable";
@@ -138,8 +191,8 @@ export const createEmployeeLink = ({
         employeePubkey: authorization.author,
         attestation: JSON.stringify(authorization.event),
       };
+      // The waiting screen publishes it.
       await saveEmployeeLogin(evolu, login);
-      void publish(login);
       return null;
     },
   };

@@ -10,11 +10,15 @@ import {
   buildBitcoinPaymentUri,
   buildCashuRequest,
   cashuRequestMint,
+  isOpenBitcoinRequest,
   matchIncomingCashu,
+  minimumBitcoinSats,
+  OPEN_REQUEST_MS,
   readIncomingCashu,
+  uniqueRequestSats,
 } from "./bitcoin";
 import type { IncomingCashu, OpenBitcoinPayment } from "./bitcoin";
-import { Sats } from "./money";
+import { CzkAmount, czkToSats, Sats, wholeCzkFor } from "./money";
 
 const mint = "http://localhost:3348";
 const device = parsePubkey("a".repeat(64));
@@ -106,18 +110,25 @@ describe("matchIncomingCashu", () => {
     ).toBeNull();
   });
 
-  it("matches a bare token to the pending payment it covers most closely", () => {
+  it("matches a bare token to the one request asking exactly its amount, even a cancelled one", () => {
     const payments = [
       payment("small", 50),
-      payment("exact-old", 100, { createdAtMs: 1_000 }),
-      payment("exact-new", 100, { createdAtMs: 2_000 }),
-      payment("large", 200),
-      payment("cancelled", 100, { status: "cancelled", createdAtMs: 3_000 }),
+      payment("cancelled", 100, { status: "cancelled" }),
+      payment("paid", 120, { status: "paid" }),
+      payment("other-mint", 120, { mintUrl: "https://cashu.cz" }),
     ];
-    expect(matchIncomingCashu(token(100), payments)?.id).toBe("exact-new");
-    expect(matchIncomingCashu(token(120), payments)?.id).toBe("exact-new");
-    expect(matchIncomingCashu(token(60), payments)?.id).toBe("small");
-    expect(matchIncomingCashu(token(40), payments)).toBeNull();
+    expect(matchIncomingCashu(token(100), payments)?.id).toBe("cancelled");
+    expect(matchIncomingCashu(token(50), payments)?.id).toBe("small");
+    expect(matchIncomingCashu(token(60), payments)).toBeNull();
+    expect(matchIncomingCashu(token(120), payments)).toBeNull();
+  });
+
+  it("assigns a bare token to no request when two ask its amount", () => {
+    const payments = [payment("first", 587), payment("second", 587)];
+    expect(matchIncomingCashu(token(587), payments)).toBeNull();
+    expect(
+      matchIncomingCashu(token(587, { requestId: "first" }), payments)?.id,
+    ).toBe("first");
   });
 
   it("compares mints without a trailing slash or case", () => {
@@ -136,6 +147,52 @@ describe("matchIncomingCashu", () => {
     expect(matchIncomingCashu(token(100, { unit: null }), payments)?.id).toBe(
       "p1",
     );
+  });
+});
+
+describe("uniqueRequestSats", () => {
+  it("raises the amount a sat at a time past every amount an open request asks", () => {
+    const open = [payment("a", 587), payment("b", 588), payment("c", 600)];
+    expect(uniqueRequestSats(Sats.make(587), open)).toBe(589);
+    expect(uniqueRequestSats(Sats.make(590), open)).toBe(590);
+  });
+
+  it("keeps two same-CZK requests apart, so paying the older one settles it", () => {
+    const sats = czkToSats(CzkAmount.make(1_100), 1_875_000);
+    const older = payment("older", uniqueRequestSats(sats, []));
+    const newer = payment("newer", uniqueRequestSats(sats, [older]));
+    expect(newer.sats).toBe(older.sats + 1);
+    expect(matchIncomingCashu(token(older.sats), [older, newer])?.id).toBe(
+      "older",
+    );
+  });
+});
+
+describe("isOpenBitcoinRequest", () => {
+  it("keeps unpaid requests, also cancelled ones, for a day", () => {
+    const now = 10 * OPEN_REQUEST_MS;
+    const at = (status: "pending" | "cancelled" | "paid", ageMs: number) =>
+      isOpenBitcoinRequest({ status, createdAtMs: now - ageMs }, now);
+    expect(at("pending", 1_000)).toBe(true);
+    expect(at("cancelled", OPEN_REQUEST_MS - 1)).toBe(true);
+    expect(at("paid", 1_000)).toBe(false);
+    expect(at("pending", OPEN_REQUEST_MS)).toBe(false);
+  });
+});
+
+describe("minimumBitcoinSats", () => {
+  it("is a floor of 10 sat, scaled for mints charging over a sat per proof", () => {
+    expect(minimumBitcoinSats(null)).toBe(10);
+    expect(minimumBitcoinSats(100)).toBe(10);
+    expect(minimumBitcoinSats(1_000)).toBe(10);
+    expect(minimumBitcoinSats(2_500)).toBe(30);
+  });
+
+  it("names the whole crowns from which the minimum is reached", () => {
+    const rate = 2_300_000;
+    const from = wholeCzkFor(minimumBitcoinSats(100), rate);
+    expect(from).toBe(100);
+    expect(czkToSats(from, rate)).toBeGreaterThanOrEqual(10);
   });
 });
 

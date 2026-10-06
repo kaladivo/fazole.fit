@@ -3,6 +3,7 @@ import { parsePubkey } from "@linky-fit/linkstr";
 import {
   buildCashuRequest,
   CzkAmount,
+  OPEN_REQUEST_MS,
   parseCzechAccount,
   Sats,
 } from "@platitprosim/core";
@@ -170,12 +171,13 @@ describe("bitcoin payments", () => {
     expect(bitcoinRequestOf(payment)).toEqual(request(id));
     expect(payment.updatedAtMs).toBe(2_000);
     expect(
-      openBitcoinPayments([payment]).map(({ id, sats, mintUrl }) => ({
+      openBitcoinPayments([payment], 2_000).map(({ id, sats, mintUrl }) => ({
         id,
         sats,
         mintUrl,
       })),
     ).toEqual([{ id, sats: 1_336, mintUrl: "http://localhost:3348" }]);
+    expect(openBitcoinPayments([payment], 1_000 + OPEN_REQUEST_MS)).toEqual([]);
   });
 
   it("settles the method when the payment completes and closes it for matching", async () => {
@@ -210,13 +212,16 @@ describe("bitcoin payments", () => {
     await cancelPayment(evolu, pending);
     const [cancelled] = await loadPayments(evolu);
     if (!cancelled) throw new Error("no payment");
-    expect(openBitcoinPayments([cancelled])).toHaveLength(1);
+    expect(openBitcoinPayments([cancelled], 2_000)).toHaveLength(1);
     await clearBitcoinRequest(evolu, id);
     const [cleared] = await loadPayments(evolu);
     if (!cleared) throw new Error("no payment");
     expect(bitcoinRequestOf(cleared)).toBeNull();
     expect(
-      openBitcoinPayments([cleared]).map(({ id, sats }) => ({ id, sats })),
+      openBitcoinPayments([cleared], 2_000).map(({ id, sats }) => ({
+        id,
+        sats,
+      })),
     ).toEqual([{ id, sats: 1_336 }]);
   });
 });

@@ -76,3 +76,7 @@ export const czkToSats = (amount: CzkAmount, czkPerBtc: number): Sats => {
 /** The CZK value of `sats`, rounded to haléře, e.g. for an "≈ CZK" hint. */
 export const satsToCzk = (sats: number, czkPerBtc: number): CzkAmount =>
   CzkAmount.make(Math.round((sats * czkPerBtc * 100) / Number(SATS_PER_BTC)));
+
+/** The whole crowns from which a CZK amount buys at least `sats`, e.g. for a "from 1 Kč" note. */
+export const wholeCzkFor = (sats: number, czkPerBtc: number): CzkAmount =>
+  CzkAmount.make(Math.ceil((sats * czkPerBtc) / Number(SATS_PER_BTC)) * 100);

@@ -9,6 +9,8 @@ import { space } from "./tokens";
 export interface ListRowProps {
   title: string;
   description?: string | undefined;
+  /** Under the description, e.g. a status `Pill` that would squeeze the title at the end of the row. */
+  meta?: ReactNode;
   /** An icon in a soft tile before the title; use `leading` for anything else, e.g. an `Avatar`. */
   icon?: IconName | undefined;
   leading?: ReactNode;
@@ -31,6 +33,7 @@ export interface ListRowProps {
 export function ListRow({
   title,
   description,
+  meta,
   icon,
   leading,
   value,
@@ -86,6 +89,7 @@ export function ListRow({
             {description}
           </Text>
         ) : null}
+        {meta}
       </Stack>
       {value !== undefined ? (
         <Text variant="label" muted numberOfLines={1} maxWidth="50%">

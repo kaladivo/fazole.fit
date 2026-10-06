@@ -5,7 +5,7 @@ import {
   decodePaymentRequestPayload,
   encodeNostrPaymentRequest,
 } from "@linky-fit/linkshu/payment-request";
-import type { Sats } from "./money";
+import { Sats } from "./money";
 import type { PaymentStatus } from "./payment";
 
 /**
@@ -71,7 +71,7 @@ export const readIncomingCashu = (text: string): IncomingCashu | null => {
     : null;
 };
 
-/** A payment that still waits for its Bitcoin leg. */
+/** A payment whose Bitcoin request a token can still pay. */
 export interface OpenBitcoinPayment {
   readonly id: string;
   readonly status: PaymentStatus;
@@ -80,32 +80,71 @@ export interface OpenBitcoinPayment {
   readonly createdAtMs: number;
 }
 
+/** How long an unpaid request keeps its amount, so a token that pays it late still finds it. */
+export const OPEN_REQUEST_MS = 24 * 60 * 60 * 1000;
+
+/** An unpaid request, also a cancelled one, from the last `OPEN_REQUEST_MS`. */
+export const isOpenBitcoinRequest = (
+  payment: { readonly status: PaymentStatus; readonly createdAtMs: number },
+  now: number,
+): boolean =>
+  payment.status !== "paid" && now - payment.createdAtMs < OPEN_REQUEST_MS;
+
+/**
+ * The sats a new request asks: `sats`, raised a sat at a time past every
+ * amount an open request asks, because a bare token names no request and is
+ * matched by its amount alone.
+ */
+export const uniqueRequestSats = (
+  sats: Sats,
+  open: ReadonlyArray<{ readonly sats: number }>,
+): Sats => {
+  const taken = new Set(open.map((payment) => payment.sats));
+  let unique: number = sats;
+  while (taken.has(unique)) unique += 1;
+  return Sats.make(unique);
+};
+
 const sameMint = (a: string, b: string) =>
   a.trim().replace(/\/+$/u, "").toLowerCase() ===
   b.trim().replace(/\/+$/u, "").toLowerCase();
 
 /**
- * The payment an incoming token pays, if any. A payload naming its request
- * matches that payment, even one the merchant cancelled. A bare token names
- * none, so it pays the pending payment at its mint it covers most closely,
- * the newest on a tie.
+ * The payment an incoming token pays, if any; a cancelled one still counts.
+ * A payload naming its request pays that request. A bare token names none,
+ * so it pays the one open request at its mint asking exactly its amount, and
+ * nothing when no request or several do.
  */
 export const matchIncomingCashu = <P extends OpenBitcoinPayment>(
   incoming: IncomingCashu,
   payments: readonly P[],
 ): P | null => {
   if (incoming.unit !== null && incoming.unit !== "sat") return null;
-  const payable = payments.filter(
+  const atMint = payments.filter(
     (payment) =>
-      payment.status !== "paid" &&
-      sameMint(payment.mintUrl, incoming.mint) &&
-      incoming.amount >= payment.sats,
+      payment.status !== "paid" && sameMint(payment.mintUrl, incoming.mint),
   );
   if (incoming.requestId !== null) {
-    return payable.find((payment) => payment.id === incoming.requestId) ?? null;
+    return (
+      atMint.find(
+        (payment) =>
+          payment.id === incoming.requestId && incoming.amount >= payment.sats,
+      ) ?? null
+    );
   }
-  const [closest] = payable
-    .filter((payment) => payment.status === "pending")
-    .sort((a, b) => b.sats - a.sats || b.createdAtMs - a.createdAtMs);
-  return closest ?? null;
+  const asked = atMint.filter((payment) => payment.sats === incoming.amount);
+  return asked.length === 1 ? (asked[0] ?? null) : null;
 };
+
+/** Below it, the mint's input fee takes too large a share of a Cashu payment. */
+const MIN_BITCOIN_SATS = 10;
+
+/**
+ * The smallest Bitcoin request to offer at a mint charging `inputFeePpk` per
+ * proof (NUT-02): ten times the most one proof's fee can be, so the token
+ * stays payable and the fees of receiving and forwarding it leave most of it.
+ */
+export const minimumBitcoinSats = (inputFeePpk: number | null): Sats =>
+  Sats.make(
+    MIN_BITCOIN_SATS * Math.max(1, Math.ceil((inputFeePpk ?? 0) / 1000)),
+  );

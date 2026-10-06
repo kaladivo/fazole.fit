@@ -109,6 +109,7 @@ export function Screen({
     <YStack
       testID={scroll ? undefined : testID}
       flexGrow={1}
+      flexShrink={1}
       width="100%"
       maxWidth={screenWidths[width]}
       alignSelf="center"

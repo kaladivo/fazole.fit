@@ -1,4 +1,5 @@
 import { Button, Dialog } from "@platitprosim/ui";
+import type { ReactNode } from "react";
 import { useI18n } from "../i18n";
 
 export function ConfirmDialog({
@@ -9,6 +10,7 @@ export function ConfirmDialog({
   confirm,
   destructive = false,
   onConfirm,
+  children,
 }: {
   open: boolean;
   onClose: () => void;
@@ -17,6 +19,8 @@ export function ConfirmDialog({
   confirm: string;
   destructive?: boolean;
   onConfirm: () => void;
+  /** Sits between the description and the buttons, e.g. who is being removed. */
+  children?: ReactNode;
 }) {
   const { t } = useI18n();
   return (
@@ -39,6 +43,8 @@ export function ConfirmDialog({
           </Button>
         </>
       }
-    />
+    >
+      {children}
+    </Dialog>
   );
 }

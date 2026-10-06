@@ -92,6 +92,7 @@ export function WithdrawSheet({
         if (!next) close();
       }}
       title={t("walletWithdraw")}
+      closeLabel={t("close")}
     >
       <Stack gap="$lg" paddingTop="$sm" testID="withdraw-sheet">
         {failure ? (
@@ -154,17 +155,17 @@ export function WithdrawSheet({
                 { label: t("withdrawTo"), value: shorten(step.payout.target) },
                 {
                   label: t("amount"),
-                  value: withCzk(step.payout.quote.amount),
+                  value: withCzk(step.payout.cost.quote.amount),
                 },
                 {
                   label: t("withdrawFee"),
-                  value: sats(step.payout.quote.feeReserve),
+                  value: sats(
+                    step.payout.cost.maxTotal - step.payout.cost.quote.amount,
+                  ),
                 },
                 {
                   label: t("withdrawTotal"),
-                  value: sats(
-                    step.payout.quote.amount + step.payout.quote.feeReserve,
-                  ),
+                  value: sats(step.payout.cost.maxTotal),
                 },
               ]}
             />

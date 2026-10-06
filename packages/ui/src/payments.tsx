@@ -1,3 +1,4 @@
+import { useState } from "react";
 import QRCodeSvg from "react-native-qrcode-svg";
 import { getVariableValue, Portal, useTheme, View } from "tamagui";
 import { BrandMark } from "./brand-mark";
@@ -8,7 +9,14 @@ import { Icon } from "./icons";
 import type { IconName } from "./icons";
 import { Row, Stack, Text } from "./layout";
 import { tooltipProps } from "./styles";
-import { border, enterScale, opacity, shadow, size as sizes } from "./tokens";
+import {
+  border,
+  enterScale,
+  opacity,
+  shadow,
+  size as sizes,
+  space,
+} from "./tokens";
 
 export type KeypadKey =
   | "0"
@@ -41,7 +49,7 @@ const keyRows = [
   ["decimal", "0", "backspace"],
 ] as const satisfies readonly (readonly KeypadKey[])[];
 
-/** A thumb-sized numeric keypad for entering an amount. */
+/** A thumb-sized numeric keypad for entering an amount; its keys shrink when the screen is short. */
 export function Keypad({
   accessibilityLabel,
   onKeyPress,
@@ -50,15 +58,27 @@ export function Keypad({
   disabled,
 }: KeypadProps) {
   return (
-    <Stack role="group" aria-label={accessibilityLabel} gap="$sm">
+    <Stack
+      role="group"
+      aria-label={accessibilityLabel}
+      gap="$sm"
+      flexShrink={1}
+      minHeight={0}
+    >
       {keyRows.map((keys) => (
-        <Row key={keys.join()} gap="$sm">
+        <Row
+          key={keys.join()}
+          gap="$sm"
+          height="$key"
+          minHeight="$keyMin"
+          flexShrink={1}
+          alignItems="stretch"
+        >
           {keys.map((key) => (
             <Pressable
               key={key}
               testID={`key-${key}`}
               flex={1}
-              height="$key"
               justifyContent="center"
               borderRadius="$key"
               backgroundColor={
@@ -111,13 +131,20 @@ export interface QRCodeProps {
   onPress?: (() => void) | undefined;
   /** A logo in a cleared centre: the brand mark or an icon such as "Zap". */
   logo?: "brand" | IconName | undefined;
+  /** The largest the code grows: `md` for side content, `lg` for a code the customer scans. */
   size?: "md" | "lg" | undefined;
   /** A browser tooltip on the web; ignored on native. */
   tooltip?: string | undefined;
   testID?: string | undefined;
 }
 
-/** A black-on-white QR code with a quiet zone, scannable in both themes. */
+/** The white frame's padding (the quiet zone) and hairline border on both sides. */
+const qrFrameInset = 2 * (space.lg + border.hairline);
+
+/**
+ * A black-on-white QR code with a quiet zone, scannable in both themes.
+ * It fills the available width up to its size, so dense codes get as many pixels per module as fit.
+ */
 export function QRCode({
   value,
   accessibilityLabel,
@@ -128,62 +155,76 @@ export function QRCode({
   testID,
 }: QRCodeProps) {
   const theme = useTheme();
+  const [availableWidth, setAvailableWidth] = useState<number>();
+  const maxSize = size === "lg" ? sizes.qrLg : sizes.qr;
+  const codeSize =
+    availableWidth === undefined
+      ? maxSize
+      : Math.max(0, Math.min(maxSize, availableWidth - qrFrameInset));
   const Frame = onPress ? Pressable : View;
   return (
-    <Frame
-      testID={testID}
-      role={onPress ? "button" : "img"}
-      aria-label={accessibilityLabel}
-      {...tooltipProps(tooltip)}
-      onPress={onPress}
-      position="relative"
-      padding="$lg"
-      borderRadius="$card"
-      backgroundColor="$qrBackground"
-      borderWidth={border.hairline}
-      borderColor="$borderColor"
-      alignSelf="center"
-      {...(onPress ? { pressStyle: { opacity: opacity.dimmed } } : {})}
+    <View
+      alignSelf="stretch"
+      alignItems="center"
+      // Hidden until measured, so the code never flashes at the wrong size.
+      opacity={availableWidth === undefined ? 0 : 1}
+      onLayout={(event) => setAvailableWidth(event.nativeEvent.layout.width)}
     >
-      <QRCodeSvg
-        value={value}
-        size={size === "lg" ? sizes.qrLg : sizes.qr}
-        color={getVariableValue(theme.qrForeground)}
-        backgroundColor={getVariableValue(theme.qrBackground)}
-        // The logo hides the centre modules; the highest level restores them.
-        ecl={logo ? "H" : "M"}
-      />
-      {logo ? (
-        <View
-          position="absolute"
-          inset={0}
-          alignItems="center"
-          justifyContent="center"
-          pointerEvents="none"
-        >
+      <Frame
+        testID={testID}
+        role={onPress ? "button" : "img"}
+        aria-label={accessibilityLabel}
+        {...tooltipProps(tooltip)}
+        onPress={onPress}
+        position="relative"
+        padding="$lg"
+        borderRadius="$card"
+        backgroundColor="$qrBackground"
+        borderWidth={border.hairline}
+        borderColor="$borderColor"
+        alignSelf="center"
+        {...(onPress ? { pressStyle: { opacity: opacity.dimmed } } : {})}
+      >
+        <QRCodeSvg
+          value={value}
+          size={codeSize}
+          color={getVariableValue(theme.qrForeground)}
+          backgroundColor={getVariableValue(theme.qrBackground)}
+          // The logo hides the centre modules and needs the highest level; without one, the lowest level keeps long payloads coarse.
+          ecl={logo ? "H" : "L"}
+        />
+        {logo ? (
           <View
-            padding="$xs"
-            borderRadius="$control"
-            backgroundColor="$qrBackground"
+            position="absolute"
+            inset={0}
+            alignItems="center"
+            justifyContent="center"
+            pointerEvents="none"
           >
-            {logo === "brand" ? (
-              <BrandMark size="iconXl" />
-            ) : (
-              <View
-                width="$iconXl"
-                height="$iconXl"
-                borderRadius="$sm"
-                backgroundColor="$qrForeground"
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Icon name={logo} color="$qrBackground" />
-              </View>
-            )}
+            <View
+              padding="$xs"
+              borderRadius="$control"
+              backgroundColor="$qrBackground"
+            >
+              {logo === "brand" ? (
+                <BrandMark size="iconXl" />
+              ) : (
+                <View
+                  width="$iconXl"
+                  height="$iconXl"
+                  borderRadius="$sm"
+                  backgroundColor="$qrForeground"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <Icon name={logo} color="$qrBackground" />
+                </View>
+              )}
+            </View>
           </View>
-        </View>
-      ) : null}
-    </Frame>
+        ) : null}
+      </Frame>
+    </View>
   );
 }
 

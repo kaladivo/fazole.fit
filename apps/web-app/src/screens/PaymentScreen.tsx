@@ -218,7 +218,10 @@ const COPIED_MS = 2_000;
 const failureTitles = {
   "rate-unavailable": "bitcoinRateUnavailable",
   "mint-unreachable": "bitcoinMintUnreachable",
-} as const satisfies Record<BitcoinRequestFailure, string>;
+} as const satisfies Record<
+  Exclude<BitcoinRequestFailure["reason"], "below-minimum">,
+  string
+>;
 
 /** Asks for the payment's Bitcoin leg while it is pending and has none, e.g. after its quote expired. */
 const useBitcoinRequest = (payment: Payment, profile: ShopProfile) => {
@@ -270,11 +273,23 @@ function BitcoinLeg({
   }, [copied]);
   const amount = formatCzkValue(payment.amountCzk, lang);
 
+  if (failure?.reason === "below-minimum") {
+    return (
+      <Notice
+        title={t("bitcoinMinimum", {
+          amount: t("amountCzk", {
+            amount: formatCzkValue(failure.minimumCzk, lang),
+          }),
+        })}
+        description={t("bitcoinMinimumHint")}
+      />
+    );
+  }
   if (failure) {
     return (
       <Notice
         tone="danger"
-        title={t(failureTitles[failure])}
+        title={t(failureTitles[failure.reason])}
         description={t("bitcoinUnavailableHint")}
         action={{ label: t("retry"), onPress: retry }}
       />

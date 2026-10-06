@@ -144,7 +144,7 @@ function EmployeeRow({
       leading={<Avatar name={name} uri={picture} />}
       title={name}
       description={shortNpub(employee.pubkey)}
-      trailing={<DeviceStatus devices={devices} t={t} />}
+      meta={<DeviceStatus devices={devices} t={t} />}
       onPress={onPress}
     />
   );
@@ -216,6 +216,7 @@ function AddEmployeeSheet({
         if (!next) reset();
       }}
       title={t("employeesAdd")}
+      closeLabel={t("close")}
     >
       <Stack gap="$lg" paddingTop="$sm" testID="add-employee-sheet">
         <Text muted>{t("employeesAddDescription")}</Text>
@@ -348,6 +349,7 @@ function EditEmployeeSheet({
           if (!next) onClose();
         }}
         title={t("employeeEdit")}
+        closeLabel={t("close")}
       >
         <Stack gap="$lg" paddingTop="$sm" testID="edit-employee-sheet">
           <Row gap="$md" alignItems="center">
@@ -359,8 +361,8 @@ function EditEmployeeSheet({
               <Text variant="caption" muted>
                 {shortNpub(employee.pubkey)}
               </Text>
+              <DeviceStatus devices={devices} t={t} />
             </Stack>
-            <DeviceStatus devices={devices} t={t} />
           </Row>
           {devices === 0 ? (
             <Text variant="caption" muted>
@@ -396,12 +398,19 @@ function EditEmployeeSheet({
       <ConfirmDialog
         open={confirming}
         onClose={() => setConfirming(false)}
-        title={t("employeeRemoveTitle", { name: displayName })}
+        title={t("employeeRemoveTitle")}
         description={t("employeeRemoveDescription")}
         confirm={t("employeeRemoveConfirm")}
         destructive
         onConfirm={() => void remove()}
-      />
+      >
+        <Row gap="$md" alignItems="center">
+          <Avatar name={displayName} uri={picture} size="sm" />
+          <Text variant="label" flex={1} numberOfLines={1}>
+            {displayName}
+          </Text>
+        </Row>
+      </ConfirmDialog>
     </>
   );
 }

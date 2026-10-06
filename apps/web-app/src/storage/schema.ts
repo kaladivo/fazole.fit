@@ -41,6 +41,8 @@ export const EmployeeLoginId = id("EmployeeLogin");
 export type EmployeeLoginId = InferType<typeof EmployeeLoginId>;
 export const ShopOfferId = id("ShopOffer");
 export type ShopOfferId = InferType<typeof ShopOfferId>;
+export const ReceiptId = id("Receipt");
+export type ReceiptId = InferType<typeof ReceiptId>;
 
 /** One install owns at most one shop and holds at most one membership, so every device converges on one row. */
 export const shopId = createIdFromString<"Shop">("shop");
@@ -56,6 +58,9 @@ export const shopOfferIdFor = (ownerPubkey: string) =>
 /** An employee payment on the owner: one row per sending device and payment, however often it is reported. */
 export const reportedPaymentIdFor = (device: string, paymentId: string) =>
   createIdFromString<"Payment">(`payment/${device}/${paymentId}`);
+/** One row per linkshu receive, however often its token is replayed. */
+export const receiptIdFor = (operationId: string) =>
+  createIdFromString<"Receipt">(`receipt/${operationId}`);
 export const settingIdFor = (key: string) =>
   createIdFromString<"Setting">(`setting/${key}`);
 export const cashuKeyValueIdFor = (key: string) =>
@@ -193,7 +198,7 @@ export const AppSchema = {
     // The Lightning address or invoice, or the Linky npub.
     target: NonEmptyString,
     amountSats: PositiveInt,
-    // The Lightning fee actually paid.
+    // Every fee the wallet paid on top of `amountSats`: Lightning and mint input fees.
     feeSats: nullOr(NonNegativeInt),
     // "pending" | "done" | "failed"
     status: NonEmptyString100,
@@ -204,6 +209,19 @@ export const AppSchema = {
     // Linky: the linkshu send, returned to the wallet if delivery fails.
     operationId: nullOr(NonEmptyString1000),
     error: nullOr(NonEmptyString1000),
+  },
+  /** Cashu this device's wallet received: a customer's token, or an employee device's forward. */
+  receipt: {
+    id: ReceiptId,
+    // "cashu" | "forward"
+    kind: NonEmptyString100,
+    // What reached the wallet, after the mint's input fee.
+    sats: PositiveInt,
+    receivedAtMs: PositiveInt,
+    // A customer's token: the payment it paid; null when it matched none.
+    paymentId: nullOr(PaymentRowId),
+    // Owner, a forward: the employee whose device sent it.
+    employeeId: nullOr(EmployeeId),
   },
   /** Small synced key/value state: language, theme. */
   setting: {

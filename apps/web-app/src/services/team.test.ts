@@ -50,6 +50,7 @@ import {
   attachForward,
   loadIdentity,
   markMembershipRemoved,
+  mutation,
 } from "../storage";
 import type { AppEvolu } from "../storage";
 import { createTestEvolu } from "../storage/testing/testEvolu";
@@ -596,6 +597,34 @@ describe("employee sync", () => {
     expect((await paymentOf(evolu, first))?.forwardedAtMs).not.toBeNull();
     await sync.sync(false);
     expect((await paymentOf(evolu, late))?.forwardedAtMs).not.toBeNull();
+  });
+
+  it("forwards sats no payment claimed, such as a token that matched none", async () => {
+    const { evolu, sync, sent, sweepCalls } = await member([
+      { tokenText: "cashuStray", operationId: "send-1" },
+    ]);
+    await mutation((onComplete) =>
+      evolu.insert(
+        "cashuProof",
+        {
+          mint,
+          unit: "sat",
+          keysetId: "00ad268c4d1f5826",
+          amount: 266,
+          secret: "stray",
+          c: "02".padEnd(66, "a"),
+          dleq: null,
+          state: "available",
+          operationId: null,
+        },
+        { onComplete },
+      ),
+    );
+    await sync.sync(true);
+    expect(sweepCalls).toEqual([mint]);
+    expect(lockedTokens(sent)).toEqual([
+      { v: 1, type: "LockedToken", paymentIds: [], token: "cashuStray" },
+    ]);
   });
 
   it("asks the mint again until the sweep goes through", async () => {

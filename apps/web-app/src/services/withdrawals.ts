@@ -12,7 +12,12 @@ import {
   stripLightningPrefix,
   Tokens,
 } from "@linky-fit/linkshu";
-import type { MeltError, MeltQuote, SendError } from "@linky-fit/linkshu";
+import type {
+  MeltCost,
+  MeltError,
+  MeltReceipt,
+  SendError,
+} from "@linky-fit/linkshu";
 import { parseBip321Uri } from "@linky-fit/linkshu/payment-request";
 import { decodeNpub, encodeNpub } from "@linky-fit/linkstr";
 import type { Pubkey } from "@linky-fit/linkstr";
@@ -66,16 +71,16 @@ export type WithdrawFailure =
   | "mint-unreachable"
   | "payment-failed";
 
-/** A priced Lightning payout, shown for confirmation before it is paid. */
+/** A priced Lightning payout, shown for confirmation before it is paid; it never costs more than `cost.maxTotal`. */
 export interface LightningPayout {
   readonly target: string;
   readonly invoice: Bolt11Invoice;
-  readonly quote: MeltQuote;
+  readonly cost: MeltCost;
 }
 
 /** The owner's ways to take money out of the wallet. */
 export interface Withdrawals {
-  /** Gets the invoice (asking a Lightning address for one) and the mint's fee reserve. */
+  /** Gets the invoice (asking a Lightning address for one) and the most paying it can cost. */
   readonly quoteLightning: (
     target: LightningTarget,
     amountSats: number,
@@ -107,6 +112,9 @@ const meltFailure = (error: MeltError | SendError): WithdrawFailure => {
 };
 
 const LINKY_REF = "withdrawal:";
+
+/** Every fee a paid melt took from the balance beyond the invoice. */
+const meltFee = (receipt: MeltReceipt) => receipt.feePaid + receipt.swapFee;
 
 export const createWithdrawals = ({
   evolu,
@@ -150,12 +158,12 @@ export const createWithdrawals = ({
 
   const settleMelt = async (
     id: WithdrawalId,
-    outcome: Either.Either<{ readonly feePaid: number }, MeltError>,
+    outcome: Either.Either<MeltReceipt, MeltError>,
   ): Promise<Either.Either<"paid" | "pending", WithdrawFailure>> => {
     if (Either.isRight(outcome)) {
       await finishWithdrawal(evolu, id, {
         status: "done",
-        feeSats: outcome.right.feePaid,
+        feeSats: meltFee(outcome.right),
       });
       return Either.right("paid");
     }
@@ -225,22 +233,26 @@ export const createWithdrawals = ({
           return Either.left("lnurl-failed");
         }
       }
-      const quote = await wallet.run(
+      const cost = await wallet.run(
         Effect.flatMap(Melt, (melt) =>
-          melt.quote(new MeltDraft({ mint: source.mint, invoice })),
+          Effect.flatMap(
+            melt.quote(new MeltDraft({ mint: source.mint, invoice })),
+            melt.cost,
+          ),
         ),
       );
-      if (Either.isLeft(quote)) return Either.left(meltFailure(quote.left));
-      if (quote.right.amount + quote.right.feeReserve > source.sats) {
+      if (Either.isLeft(cost)) return Either.left(meltFailure(cost.left));
+      if (cost.right.maxTotal > source.sats) {
         return Either.left("insufficient-funds");
       }
       return Either.right({
         target: target.kind === "invoice" ? target.invoice : target.target,
         invoice,
-        quote: quote.right,
+        cost: cost.right,
       });
     },
-    payLightning: async ({ target, invoice, quote }) => {
+    payLightning: async ({ target, invoice, cost }) => {
+      const { quote } = cost;
       const id = await createWithdrawal(evolu, {
         kind: "lightning",
         target,
@@ -254,6 +266,7 @@ export const createWithdrawals = ({
               mint: quote.mint,
               invoice,
               quoteId: quote.quoteId,
+              maxTotal: cost.maxTotal,
             }),
           ),
         ),
@@ -290,8 +303,11 @@ export const createWithdrawals = ({
           });
           return meltFailure(sent.left);
         }
-        const { operationId, tokenText } = sent.right;
-        await attachWithdrawalSend(evolu, id, operationId);
+        const { operationId, tokenText, feePaid } = sent.right;
+        await attachWithdrawalSend(evolu, id, {
+          operationId,
+          feeSats: feePaid,
+        });
         try {
           await nostr.sendToken(to, tokenText, refOf(id));
         } catch (error) {
@@ -323,7 +339,7 @@ export const createWithdrawals = ({
             if (result.status === "paid") {
               await finishWithdrawal(evolu, withdrawal.id, {
                 status: "done",
-                ...(result.receipt ? { feeSats: result.receipt.feePaid } : {}),
+                ...(result.receipt ? { feeSats: meltFee(result.receipt) } : {}),
               });
             } else if (result.status === "unpaid") {
               await finishWithdrawal(evolu, withdrawal.id, {
