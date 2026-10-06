@@ -1,5 +1,6 @@
-import Svg, { Path, Rect } from "react-native-svg";
+import { Image } from "tamagui";
 import { Text } from "./layout";
+import logo from "./logo.webp";
 import { brandMark, letterSpacing, size as sizes } from "./tokens";
 
 export interface BrandMarkProps {
@@ -7,36 +8,20 @@ export interface BrandMarkProps {
   accessibilityLabel?: string | undefined;
 }
 
-/** The app's logo mark: a cream bean with a red hilum on a green-pod tile. */
+/** The app's logo mark: a gold bean on a black tile. */
 export function BrandMark({
   size = "controlLg",
   accessibilityLabel = "fazole.fit",
 }: BrandMarkProps) {
   const width = sizes[size];
-  const { bean, hilum } = brandMark;
   return (
-    <Svg
+    <Image
+      src={logo}
+      alt={accessibilityLabel}
       width={width}
       height={width}
-      viewBox={brandMark.viewBox}
-      role="img"
-      aria-label={accessibilityLabel}
-    >
-      <Rect width={64} height={64} rx={18} fill={brandMark.color} />
-      <Path
-        d={bean.path}
-        fill="none"
-        stroke={bean.color}
-        strokeWidth={bean.width}
-        strokeLinecap="round"
-      />
-      <Path
-        d={hilum.path}
-        stroke={hilum.color}
-        strokeWidth={hilum.width}
-        strokeLinecap="round"
-      />
-    </Svg>
+      borderRadius={width * brandMark.cornerRatio}
+    />
   );
 }
 

@@ -15,7 +15,7 @@ The sibling project `../linky` (`/Users/jarvis/workspace/linky`) is the referenc
 - React 19, Vite 7, TypeScript strict, Effect 3 (same major as linkstr/linkshu), Tamagui + react-native-web (same versions as linky), vite-plugin-pwa, Vitest.
 - No `any`. Follow linky's lint and prettier conventions. The app uses no DOM elements, `className` or `style`; it uses UI components only.
 - i18n: Czech (default) and English. Every user-facing string goes through translations.
-- Brand: fazole.fit (in Czech, fazole means beans, and it was also the name of the first online money on the Czech internet). Warm bean-cream and black-bean neutrals with a green-bean accent; a cream bean with a red hilum as the logo; Bricolage Grotesque for headings and amounts; pill-shaped controls. Phone-first. It must also work on desktop: centred column, max width about 480px for the terminal.
+- Brand: fazole.fit (in Czech, fazole means beans, and it was also the name of the first online money on the Czech internet). Gold on black: warm ink-black neutrals in dark mode and ivory in light mode, with a gold accent and black text on gold; a photorealistic gold bean on black as the logo; Bricolage Grotesque for headings and amounts; pill-shaped controls. Phone-first. It must also work on desktop: centred column, max width about 480px for the terminal.
 
 ## Storage rules
 
