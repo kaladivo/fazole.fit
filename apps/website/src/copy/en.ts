@@ -3,19 +3,19 @@ import type { SiteCopy } from "./cs";
 
 export const en: SiteCopy = {
   meta: {
-    title: "fazole.fit – QR payments with no commission",
+    title: "fazole.fit – the payment terminal you own",
     description:
-      "A payment terminal on your phone. Customers pay by bank transfer via a QR code or with Bitcoin. No commission, no server, your data stays on your devices.",
+      "A payment terminal on your phone. Customers pay by bank transfer via a QR code or with Bitcoin. No contract and no server: only you hold your sales data.",
     socialDescription:
-      "Your phone as a payment terminal. By bank transfer via a QR code or with Bitcoin, with no commission and no server.",
+      "Your phone as a payment terminal. By bank transfer via a QR code or with Bitcoin, and only you hold your sales data.",
     imageAlt: "fazole.fit: a phone with a payment terminal and a QR code",
     ogLocale: "en_US",
   },
   nav: {
     home: "fazole.fit, home",
+    benefits: "Why fazole",
     howItWorks: "How it works",
-    team: "Employees",
-    comparison: "Comparison",
+    audience: "Who it's for",
     faq: "FAQ",
     openApp: "Open the app",
     switchLanguage: "Přepnout do češtiny",
@@ -25,17 +25,53 @@ export const en: SiteCopy = {
   },
   hero: {
     eyebrow: "A payment terminal on your phone",
-    titleBefore: "Accept payments ",
-    // Soft hyphens let the long word break on 320 px phones.
-    titleAccent: "with no com\u00admis\u00adsion",
+    titleBefore: "The payment terminal ",
+    titleAccent: "you\u00a0own",
     titleAfter: "",
     subtitle:
-      "Customers scan a QR code and pay by bank transfer, or with Bitcoin over Lightning or Cashu. Your phone is the terminal. No server, no account: your data stays on your devices.",
+      "Customers scan a QR code and pay by bank transfer straight to your account, or with Bitcoin over Lightning or Cashu. No contract and no card reader, just your phone. Your sales, history and bitcoin stay with you, not with a provider.",
     primaryCta: "Open the app",
     secondaryCta: "How it works",
     methods: ["Bank QR", "Lightning", "Cashu"],
     demoLabel: "Live demo",
     demoHint: "Type an amount and try a whole payment.",
+  },
+  benefits: {
+    eyebrow: "Why fazole.fit",
+    title: "Your money, your data",
+    body: "No middleman stands between you and your customer. Only you know how much you sell.",
+    points: points([
+      {
+        icon: "KeyRound",
+        title: "Only you hold the data",
+        body: "Sales, history and employees are stored on your devices. We have no server for them to sit on.",
+      },
+      {
+        icon: "Bitcoin",
+        title: "Accept Bitcoin",
+        body: "Lightning and Cashu from one QR code. The bitcoin is locked to your key, so only you can spend it.",
+      },
+      {
+        icon: "Landmark",
+        title: "Straight to your account",
+        body: "A transfer goes from the customer's account directly to yours. Nobody holds it and there is no payout to wait for.",
+      },
+      {
+        icon: "Smartphone",
+        title: "No contract, no card reader",
+        body: "The phone or tablet you already have is enough. Open the app and start.",
+      },
+      {
+        icon: "Users",
+        title: "For the whole team",
+        body: "Employees take payments on their own phones, and you see everything.",
+      },
+      {
+        icon: "ShieldCheck",
+        title: "Open source",
+        body: "All of the source code is public. Anyone can check what the app does.",
+      },
+    ]),
   },
   how: {
     eyebrow: "How it works",
@@ -67,6 +103,33 @@ export const en: SiteCopy = {
       pill: "Confirmed automatically",
       body: "Lightning and Cashu in a single QR code (BIP-321). The app detects the payment by itself and shows the confirmation right away.",
     },
+  },
+  audience: {
+    eyebrow: "Who it's for",
+    title: "For anyone who sells in person",
+    body: "Wherever the customer stands in front of you with a phone in hand.",
+    points: points([
+      {
+        icon: "Coffee",
+        title: "Cafés and bistros",
+        body: "Quick sales at the counter and the whole team's takings in one history.",
+      },
+      {
+        icon: "ShoppingBasket",
+        title: "Shops and markets",
+        body: "A small shop, a stall or a farmers' market. The terminal fits in your pocket.",
+      },
+      {
+        icon: "Scissors",
+        title: "Salons and services",
+        body: "Hairdressers, beauticians, massages. The customer pays at the end of the visit.",
+      },
+      {
+        icon: "Hammer",
+        title: "Tradespeople",
+        body: "Paid right after the job, on the spot.",
+      },
+    ]),
   },
   history: {
     eyebrow: "History",
@@ -134,14 +197,19 @@ export const en: SiteCopy = {
   comparison: {
     eyebrow: "Comparison",
     title: "Why not a card terminal?",
-    body: "A card terminal takes a percentage of every payment and needs its own hardware. fazole.fit needs neither.",
+    body: "A card terminal needs a contract and its own hardware, and the provider sees every payment you take. fazole.fit needs none of that.",
     cardTerminal: "Card terminal",
     fazole: "fazole.fit",
     rows: [
       {
-        label: "Fee per payment",
-        cardTerminal: "1–2 % of every payment",
-        fazole: "CZK 0 by bank, a few sats for Bitcoin",
+        label: "Your data",
+        cardTerminal: "With the provider",
+        fazole: "Only on your devices",
+      },
+      {
+        label: "Bitcoin",
+        cardTerminal: "No",
+        fazole: "Lightning and Cashu",
       },
       {
         label: "Hardware",
@@ -149,19 +217,19 @@ export const en: SiteCopy = {
         fazole: "The phone you already have",
       },
       {
-        label: "Monthly fee",
-        cardTerminal: "Often",
-        fazole: "None",
-      },
-      {
         label: "Contract",
         cardTerminal: "With a bank or a provider",
         fazole: "None, just open the app",
       },
       {
-        label: "Your data",
-        cardTerminal: "With the provider",
-        fazole: "Only on your devices",
+        label: "Monthly fee",
+        cardTerminal: "Often",
+        fazole: "None",
+      },
+      {
+        label: "Fees",
+        cardTerminal: "1–2 % of every payment",
+        fazole: "Your bank's tariff for transfers, a few sats for Bitcoin",
       },
     ],
     note: "We don't take cards yet: the customer needs a banking app or a Bitcoin wallet.",
@@ -200,7 +268,7 @@ export const en: SiteCopy = {
       {
         question: "What does it cost?",
         answer:
-          "The app is free and takes no cut of your payments. A bank transfer goes from the customer's account straight to yours with no fees. With Bitcoin, the Cashu mint charges small fees, usually a few sats: when you receive a payment, when an employee's phone forwards it to you, and when you withdraw.",
+          "The app is free and takes no cut of your payments. A bank transfer goes from the customer's account straight to yours, and your bank charges whatever its tariff charges for any incoming payment. With Bitcoin, the Cashu mint charges small fees, usually a few sats: when you receive a payment, when an employee's phone forwards it to you, and when you withdraw.",
       },
       {
         question: "What does the customer need?",

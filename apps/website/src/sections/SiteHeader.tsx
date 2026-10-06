@@ -66,15 +66,12 @@ export function SiteHeader() {
         </Row>
         {wide ? (
           <Row render="nav" gap="$xxl">
+            <NavLink href={`#${sectionIds.benefits}`} label={nav.benefits} />
             <NavLink
               href={`#${sectionIds.howItWorks}`}
               label={nav.howItWorks}
             />
-            <NavLink href={`#${sectionIds.team}`} label={nav.team} />
-            <NavLink
-              href={`#${sectionIds.comparison}`}
-              label={nav.comparison}
-            />
+            <NavLink href={`#${sectionIds.audience}`} label={nav.audience} />
             <NavLink href={`#${sectionIds.faq}`} label={nav.faq} />
           </Row>
         ) : null}
