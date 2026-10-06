@@ -15,7 +15,7 @@ import {
 } from "@platitprosim/core";
 import { Effect, Either } from "effect";
 import {
-  dropShopOffer,
+  declineShopOffer,
   loadEmployeeLogin,
   loadShopOffers,
   loadStoredMembership,
@@ -148,7 +148,9 @@ export const createEmployeeLink = ({
 /**
  * Employee install: a `ShopConfig` from the shop it works for updates the
  * membership, one from another owner waits for the employee to accept it,
- * and `EmployeeRemoved` from its owner ends the membership.
+ * and `EmployeeRemoved` from its owner ends the membership. The inbox
+ * replays old configs in any order, so only a newer one is applied, and
+ * none from an owner who removed this device.
  */
 export const receiveMembershipMessages = (evolu: AppEvolu, nostr: Nostr) =>
   nostr.onAppMessage(async (message, event) => {
@@ -157,17 +159,26 @@ export const receiveMembershipMessages = (evolu: AppEvolu, nostr: Nostr) =>
       const login = await loadEmployeeLogin(evolu);
       if (login === null) return;
       const membership = await loadStoredMembership(evolu);
-      if (membership !== null && !membership.removed) {
-        if (membership.ownerPubkey === event.from) {
+      if (membership?.ownerPubkey === event.from) {
+        if (
+          !membership.removed &&
+          message.updatedAt > (membership.configUpdatedAtMs ?? 0)
+        ) {
           await saveMembership(evolu, message, login.employeePubkey);
         }
         return;
       }
-      const offers = await loadShopOffers(evolu);
-      const declined = offers.some(
-        (offer) => offer.ownerPubkey === event.from && offer.declined,
+      if (membership !== null && !membership.removed) return;
+      const offer = (await loadShopOffers(evolu)).find(
+        ({ ownerPubkey }) => ownerPubkey === event.from,
       );
-      if (!declined) await saveShopOffer(evolu, event.from, message);
+      if (
+        offer?.declined ||
+        message.updatedAt <= (offer?.config.updatedAt ?? 0)
+      ) {
+        return;
+      }
+      await saveShopOffer(evolu, event.from, message);
       return;
     }
     if (message.type === "EmployeeRemoved") {
@@ -182,6 +193,6 @@ export const receiveMembershipMessages = (evolu: AppEvolu, nostr: Nostr) =>
       const offer = (await loadShopOffers(evolu)).find(
         (stored) => stored.ownerPubkey === event.from && !stored.declined,
       );
-      if (offer) await dropShopOffer(evolu, offer.id);
+      if (offer) await declineShopOffer(evolu, offer.id);
     }
   });

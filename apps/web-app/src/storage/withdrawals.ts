@@ -1,8 +1,9 @@
 import { sqliteTrue } from "@evolu/common";
 import { useQuery } from "@evolu/react";
-import { Option, Schema } from "effect";
+import { Schema } from "effect";
 import type { AppEvolu } from "./evolu";
 import { mutation, useAppEvolu } from "./evolu";
+import { decodeRows } from "./rows";
 import type { WithdrawalId } from "./schema";
 
 export const WithdrawalKind = Schema.Literal("lightning", "linky");
@@ -38,17 +39,9 @@ const withdrawalsQuery = (evolu: AppEvolu) =>
       .orderBy("createdAtMs", "desc"),
   );
 
-const toWithdrawals = (
-  rows: ReadonlyArray<{ readonly id: WithdrawalId } & Record<string, unknown>>,
-): Withdrawal[] =>
-  rows.flatMap((row) =>
-    Option.toArray(
-      Option.map(decodeWithdrawal(row), (fields) => ({
-        ...fields,
-        id: row.id,
-      })),
-    ),
-  );
+const toWithdrawals = decodeRows<typeof WithdrawalFields.Type, WithdrawalId>(
+  decodeWithdrawal,
+);
 
 /** Newest first. */
 export const useWithdrawals = (): Withdrawal[] =>

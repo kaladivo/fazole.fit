@@ -10,7 +10,9 @@ import { Option, Schema } from "effect";
 import { appConfig } from "../config";
 import type { AppEvolu } from "./evolu";
 import { mutation, useAppEvolu } from "./evolu";
-import { membershipId, shopId } from "./schema";
+import { useStoredMembership } from "./membership";
+import { RowChangedAtMs } from "./rows";
+import { shopId } from "./schema";
 
 export type Role = "owner" | "employee";
 
@@ -24,55 +26,41 @@ export interface ShopProfile {
   readonly mintUrl: string;
 }
 
+/** The owner's shop, with when it last changed. */
+export type OwnShop = ShopProfile & { readonly updatedAtMs: number };
+
 const ShopRow = Schema.Struct({
   name: Schema.NonEmptyTrimmedString,
   iban: CzechIban,
   accountDisplay: Schema.NonEmptyTrimmedString,
   mintUrl: Schema.NullOr(Schema.NonEmptyTrimmedString),
+  updatedAtMs: RowChangedAtMs,
 });
 const decodeShop = Schema.decodeUnknownOption(ShopRow);
-
-const MembershipRow = Schema.Struct({
-  shopName: Schema.NonEmptyTrimmedString,
-  iban: CzechIban,
-  accountDisplay: Schema.NonEmptyTrimmedString,
-  mintUrl: Schema.NonEmptyTrimmedString,
-  removedAtMs: Schema.Null,
-});
-const decodeMembership = Schema.decodeUnknownOption(MembershipRow);
 
 export const shopQuery = (evolu: AppEvolu) =>
   evolu.createQuery((db) =>
     db
       .selectFrom("shop")
       .select(["name", "iban", "accountDisplay", "mintUrl"])
+      .select((eb) => eb.fn.coalesce("updatedAt", "createdAt").as("changedAt"))
       .where("id", "=", shopId)
-      .where("isDeleted", "is not", sqliteTrue),
-  );
-
-const membershipQuery = (evolu: AppEvolu) =>
-  evolu.createQuery((db) =>
-    db
-      .selectFrom("membership")
-      .select(["shopName", "iban", "accountDisplay", "mintUrl", "removedAtMs"])
-      .where("id", "=", membershipId)
       .where("isDeleted", "is not", sqliteTrue),
   );
 
 /** `null` until the install owns a shop or holds an active membership; the role routes the app. */
 export const useShopProfile = (): ShopProfile | null => {
-  const evolu = useAppEvolu();
-  const shop = toOwnerProfile(useQuery(shopQuery(evolu))[0]);
-  const membership = decodeMembership(useQuery(membershipQuery(evolu))[0]);
+  const shop = toOwnShop(useQuery(shopQuery(useAppEvolu()))[0]);
+  const membership = useStoredMembership();
   if (shop) return shop;
-  if (Option.isSome(membership)) {
-    const { shopName, iban, accountDisplay, mintUrl } = membership.value;
+  if (membership && !membership.removed) {
+    const { shopName, iban, accountDisplay, mintUrl } = membership;
     return { role: "employee", name: shopName, iban, accountDisplay, mintUrl };
   }
   return null;
 };
 
-const toOwnerProfile = (row: unknown): ShopProfile | null =>
+const toOwnShop = (row: unknown): OwnShop | null =>
   Option.getOrNull(
     Option.map(decodeShop(row), ({ mintUrl, ...details }) => ({
       role: "owner" as const,
@@ -82,10 +70,8 @@ const toOwnerProfile = (row: unknown): ShopProfile | null =>
   );
 
 /** The owner's shop, `null` on an employee or a fresh install. */
-export const loadOwnShop = async (
-  evolu: AppEvolu,
-): Promise<ShopProfile | null> =>
-  toOwnerProfile((await evolu.loadQuery(shopQuery(evolu)))[0]);
+export const loadOwnShop = async (evolu: AppEvolu): Promise<OwnShop | null> =>
+  toOwnShop((await evolu.loadQuery(shopQuery(evolu)))[0]);
 
 export interface ShopDetails {
   readonly name: string;

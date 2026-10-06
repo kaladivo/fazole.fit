@@ -26,14 +26,18 @@ const offer = (declined = false): ShopOffer => ({
     ownerPubkey: owner,
     mintUrl: "https://cashu.cz",
     employeeName: "Jana",
+    updatedAt: 1_000,
   },
 });
 const membership = (removed: boolean): StoredMembership => ({
   shopName: "Kavárna",
+  iban: CzechIban.make("CZ6508000000192000145399"),
+  accountDisplay: "19-2000145399/0800",
   ownerPubkey: owner,
   mintUrl: "https://cashu.cz",
   employeeName: "Jana",
   employeePubkey: login.employeePubkey,
+  configUpdatedAtMs: 1_000,
   removed,
 });
 

@@ -1,10 +1,11 @@
-import { sqliteTrue } from "@evolu/common";
+import { sqliteFalse, sqliteTrue } from "@evolu/common";
 import { useQuery } from "@evolu/react";
 import { Pubkey } from "@linky-fit/linkstr";
-import { ShopConfig } from "@platitprosim/core";
+import { CzechIban, ShopConfig } from "@platitprosim/core";
 import { Option, Schema } from "effect";
 import type { AppEvolu } from "./evolu";
 import { mutation, useAppEvolu } from "./evolu";
+import { decodeRows } from "./rows";
 import { employeeLoginId, membershipId, shopOfferIdFor } from "./schema";
 import type { ShopOfferId } from "./schema";
 
@@ -29,35 +30,34 @@ export interface ShopOffer {
 }
 
 const ShopConfigJson = Schema.parseJson(ShopConfig);
-const decodeOffer = Schema.decodeUnknownOption(
-  Schema.Struct({
-    ownerPubkey: Pubkey,
-    config: ShopConfigJson,
-    declinedAtMs: Schema.NullOr(Schema.Int),
-  }),
-);
+const OfferRow = Schema.Struct({
+  ownerPubkey: Pubkey,
+  config: ShopConfigJson,
+  declinedAtMs: Schema.NullOr(Schema.Int),
+});
+const decodeOffer = Schema.decodeUnknownOption(OfferRow);
 const encodeConfig = Schema.encodeSync(ShopConfigJson);
 
-/** The membership as stored, removed or not. */
-export interface StoredMembership {
-  readonly shopName: string;
-  readonly ownerPubkey: Pubkey;
-  readonly mintUrl: string;
-  readonly employeeName: string | null;
-  readonly employeePubkey: Pubkey | null;
-  readonly removed: boolean;
-}
+const MembershipRow = Schema.Struct({
+  shopName: Schema.NonEmptyTrimmedString,
+  iban: CzechIban,
+  accountDisplay: Schema.NonEmptyTrimmedString,
+  ownerPubkey: Pubkey,
+  mintUrl: Schema.NonEmptyTrimmedString,
+  employeeName: Schema.NullOr(Schema.String),
+  employeePubkey: Schema.NullOr(Pubkey),
+  configUpdatedAtMs: Schema.NullOr(Schema.Int),
+  removedAtMs: Schema.NullOr(Schema.Int),
+});
+const decodeMembership = Schema.decodeUnknownOption(MembershipRow);
 
-const decodeMembership = Schema.decodeUnknownOption(
-  Schema.Struct({
-    shopName: Schema.NonEmptyString,
-    ownerPubkey: Pubkey,
-    mintUrl: Schema.NonEmptyString,
-    employeeName: Schema.NullOr(Schema.String),
-    employeePubkey: Schema.NullOr(Pubkey),
-    removedAtMs: Schema.NullOr(Schema.Int),
-  }),
-);
+/** The membership as stored, removed or not. */
+export type StoredMembership = Omit<
+  typeof MembershipRow.Type,
+  "removedAtMs"
+> & {
+  readonly removed: boolean;
+};
 
 const loginQuery = (evolu: AppEvolu) =>
   evolu.createQuery((db) =>
@@ -83,10 +83,13 @@ export const membershipRowQuery = (evolu: AppEvolu) =>
       .selectFrom("membership")
       .select([
         "shopName",
+        "iban",
+        "accountDisplay",
         "ownerPubkey",
         "mintUrl",
         "employeeName",
         "employeePubkey",
+        "configUpdatedAtMs",
         "removedAtMs",
       ])
       .where("id", "=", membershipId)
@@ -99,18 +102,16 @@ const toLogin = (row: unknown): EmployeeLogin | null =>
 const toOffers = (
   rows: ReadonlyArray<{ readonly id: ShopOfferId } & Record<string, unknown>>,
 ): ShopOffer[] =>
-  rows.flatMap((row) =>
-    Option.toArray(
-      Option.map(decodeOffer(row), ({ ownerPubkey, config, declinedAtMs }) => ({
-        id: row.id,
-        ownerPubkey,
-        config,
-        declined: declinedAtMs !== null,
-      })),
-    ),
+  decodeRows<typeof OfferRow.Type, ShopOfferId>(decodeOffer)(rows).map(
+    ({ id, ownerPubkey, config, declinedAtMs }) => ({
+      id,
+      ownerPubkey,
+      config,
+      declined: declinedAtMs !== null,
+    }),
   );
 
-export const toStoredMembership = (row: unknown): StoredMembership | null =>
+const toStoredMembership = (row: unknown): StoredMembership | null =>
   Option.getOrNull(
     Option.map(decodeMembership(row), ({ removedAtMs, ...membership }) => ({
       ...membership,
@@ -140,6 +141,7 @@ export const loadStoredMembership = async (
 ): Promise<StoredMembership | null> =>
   toStoredMembership((await evolu.loadQuery(membershipRowQuery(evolu)))[0]);
 
+/** Stores the login, also over one `cancelEmployeeLogin` dropped. */
 export const saveEmployeeLogin = (
   evolu: AppEvolu,
   login: EmployeeLogin,
@@ -148,7 +150,12 @@ export const saveEmployeeLogin = (
   mutation((onComplete) =>
     evolu.upsert(
       "employeeLogin",
-      { id: employeeLoginId, ...login, createdAtMs: now },
+      {
+        id: employeeLoginId,
+        ...login,
+        createdAtMs: now,
+        isDeleted: sqliteFalse,
+      },
       { onComplete },
     ),
   );
@@ -168,7 +175,7 @@ export const cancelEmployeeLogin = async (evolu: AppEvolu) => {
   ]);
 };
 
-/** Keeps the newest config of an owner until the employee answers it. */
+/** Keeps the newest config of an owner until the employee answers it; it also brings back a dropped offer. */
 export const saveShopOffer = (
   evolu: AppEvolu,
   ownerPubkey: Pubkey,
@@ -184,6 +191,7 @@ export const saveShopOffer = (
         config: encodeConfig(config),
         receivedAtMs: now,
         declinedAtMs: null,
+        isDeleted: sqliteFalse,
       },
       { onComplete },
     ),
@@ -227,6 +235,7 @@ export const saveMembership = (
             : config.employeeName.trim().slice(0, 100),
         employeePubkey,
         receivedAtMs: now,
+        configUpdatedAtMs: config.updatedAt,
         removedAtMs: null,
       },
       { onComplete },

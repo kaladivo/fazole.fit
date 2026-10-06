@@ -23,6 +23,7 @@ const shopConfig = {
   ownerPubkey,
   mintUrl: "https://cashu.cz",
   employeeName: "Jana",
+  updatedAt: 1_760_000_000_000,
 };
 
 const paymentRecord: PaymentRecord = {
@@ -69,6 +70,10 @@ describe("app messages", () => {
       JSON.stringify({ ...shopConfig, iban: "CZ6608000000192000145399" }),
     ],
     ["invalid pubkey", JSON.stringify({ ...shopConfig, ownerPubkey: "abc" })],
+    [
+      "ShopConfig without updatedAt",
+      JSON.stringify({ ...shopConfig, updatedAt: undefined }),
+    ],
     ["fractional haléře", JSON.stringify({ ...paymentRecord, amountCzk: 1.5 })],
     [
       "unknown status",

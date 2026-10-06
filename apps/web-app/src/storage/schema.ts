@@ -103,7 +103,9 @@ export const AppSchema = {
     // Hex pubkey of the employee's Linky identity.
     employeePubkey: nullOr(NonEmptyString100),
     receivedAtMs: PositiveInt,
-    // Set by `EmployeeRemoved`.
+    // The applied config's `updatedAt`; an older or equal config is a replay.
+    configUpdatedAtMs: nullOr(PositiveInt),
+    // Set by `EmployeeRemoved`; configs from this owner are ignored from then on.
     removedAtMs: nullOr(PositiveInt),
   },
   /** Owner install: the people allowed to take payments for the shop. */
@@ -143,7 +145,7 @@ export const AppSchema = {
     // The `ShopConfig` JSON.
     config: NonEmptyString,
     receivedAtMs: PositiveInt,
-    // The employee declined; further configs from this owner are ignored.
+    // The employee declined, or the owner removed them; further configs from this owner are ignored.
     declinedAtMs: nullOr(PositiveInt),
   },
   /** The payment history: this device's payments and, on the owner, every employee's. */

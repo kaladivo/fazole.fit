@@ -2,7 +2,7 @@ import { verifyDeviceAuthorization } from "@linky-fit/linkstr";
 import type { Pubkey } from "@linky-fit/linkstr";
 import { DEVICE_AUTHORIZATION_APP } from "@platitprosim/core";
 import type { ShopConfig } from "@platitprosim/core";
-import type { Employee, ShopProfile } from "../storage";
+import type { Employee, OwnShop } from "../storage";
 
 /** A device attestation that passed every check: whose it is and which key it links. */
 export interface DeviceLink {
@@ -37,7 +37,7 @@ export const verifyDeviceLink = (
 
 /** What the owner tells an employee device; the shop is identified by the owner's key. */
 export const shopConfigFor = (
-  shop: ShopProfile,
+  shop: OwnShop,
   ownerPubkey: Pubkey,
   employee: Employee,
 ): ShopConfig => ({
@@ -50,6 +50,7 @@ export const shopConfigFor = (
   ownerPubkey,
   mintUrl: shop.mintUrl,
   employeeName: employee.name ?? "",
+  updatedAt: Math.max(shop.updatedAtMs, employee.updatedAtMs),
 });
 
 /**

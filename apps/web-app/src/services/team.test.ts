@@ -25,6 +25,7 @@ import type { AppMessage, PaymentRecord, ShopConfig } from "@platitprosim/core";
 import { describe, expect, it } from "vitest";
 import {
   addEmployee,
+  cancelEmployeeLogin,
   completePayment,
   createPayment,
   linkEmployeeDevice,
@@ -88,6 +89,7 @@ const shopConfig = (overrides: Partial<ShopConfig> = {}): ShopConfig => ({
   ownerPubkey: owner,
   mintUrl: "http://localhost:3348",
   employeeName: "Jana",
+  updatedAt: 1_000,
   ...overrides,
 });
 
@@ -251,7 +253,7 @@ describe("ShopConfig and EmployeeRemoved on an employee device", () => {
     await saveMembership(evolu, shopConfig(), employeeKey);
     const other = makeIdentity().pubkey;
     await deliver(
-      [owner, shopConfig({ shopName: "Kavárna Nová" })],
+      [owner, shopConfig({ shopName: "Kavárna Nová", updatedAt: 2_000 })],
       [other, shopConfig({ ownerPubkey: other, shopId: other })],
       [other, { v: 1, type: "EmployeeRemoved", shopId: other }],
     );
@@ -262,6 +264,62 @@ describe("ShopConfig and EmployeeRemoved on an employee device", () => {
     expect(await loadShopOffers(evolu)).toEqual([]);
     await deliver([owner, { v: 1, type: "EmployeeRemoved", shopId: owner }]);
     expect((await loadStoredMembership(evolu))?.removed).toBe(true);
+  });
+
+  it("ignores a replayed config older than or as old as the membership's", async () => {
+    const { evolu, deliver } = await loggedIn();
+    await saveMembership(evolu, shopConfig({ updatedAt: 2_000 }), employeeKey);
+    const oldIban = CzechIban.make("CZ5508000000001234567899");
+    await deliver(
+      [owner, shopConfig({ iban: oldIban, updatedAt: 1_000 })],
+      [owner, shopConfig({ iban: oldIban, updatedAt: 2_000 })],
+    );
+    expect(await loadStoredMembership(evolu)).toMatchObject({
+      iban: shopConfig().iban,
+      configUpdatedAtMs: 2_000,
+    });
+    await deliver([owner, shopConfig({ iban: oldIban, updatedAt: 3_000 })]);
+    expect((await loadStoredMembership(evolu))?.iban).toBe(oldIban);
+  });
+
+  it("offers nothing again from the owner who removed the device, whatever replays", async () => {
+    const { evolu, deliver } = await loggedIn();
+    await saveMembership(evolu, shopConfig(), employeeKey);
+    await deliver(
+      [owner, { v: 1, type: "EmployeeRemoved", shopId: owner }],
+      [owner, shopConfig()],
+      [owner, shopConfig({ updatedAt: 5_000 })],
+    );
+    expect((await loadStoredMembership(evolu))?.removed).toBe(true);
+    expect(await loadShopOffers(evolu)).toEqual([]);
+  });
+
+  it("keeps a withdrawn offer from coming back on a replay", async () => {
+    const { evolu, deliver } = await loggedIn();
+    await deliver(
+      [owner, shopConfig({ updatedAt: 2_000 })],
+      [owner, shopConfig({ shopName: "Stará", updatedAt: 1_000 })],
+    );
+    expect(await loadShopOffers(evolu)).toMatchObject([
+      { declined: false, config: { shopName: "Kavárna" } },
+    ]);
+    await deliver(
+      [owner, { v: 1, type: "EmployeeRemoved", shopId: owner }],
+      [owner, shopConfig({ updatedAt: 2_000 })],
+    );
+    expect(await loadShopOffers(evolu)).toMatchObject([{ declined: true }]);
+  });
+
+  it("takes a new login, and its owner's offer again, after logging out", async () => {
+    const { evolu, deliver } = await loggedIn();
+    await deliver([owner, shopConfig()]);
+    await cancelEmployeeLogin(evolu);
+    await saveEmployeeLogin(evolu, {
+      employeePubkey: employeeKey,
+      attestation: "{}",
+    });
+    await deliver([owner, shopConfig()]);
+    expect(await loadShopOffers(evolu)).toMatchObject([{ declined: false }]);
   });
 });
 

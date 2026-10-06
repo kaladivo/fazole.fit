@@ -29,6 +29,7 @@ const employee = (overrides: Partial<Employee> = {}): Employee => ({
   name: "Jana",
   addedAtMs: 1,
   removedAtMs: null,
+  updatedAtMs: 1_000,
   ...overrides,
 });
 
@@ -122,6 +123,7 @@ describe("shopConfigFor", () => {
         iban: CzechIban.make("CZ6508000000192000145399"),
         accountDisplay: "19-2000145399/0800",
         mintUrl: "http://localhost:3348",
+        updatedAtMs: 2_000,
       },
       deviceKeys.pubkey,
       employee({ name: null }),
@@ -129,6 +131,22 @@ describe("shopConfigFor", () => {
     expect(
       Either.getOrThrow(decodeAppMessage(encodeAppMessage(config))),
     ).toEqual({ ...config, shopId: deviceKeys.pubkey, employeeName: "" });
+  });
+
+  it("dates the config by the later change of the shop and the employee", () => {
+    const shop = {
+      role: "owner" as const,
+      name: "Kavárna",
+      iban: CzechIban.make("CZ6508000000192000145399"),
+      accountDisplay: "19-2000145399/0800",
+      mintUrl: "http://localhost:3348",
+      updatedAtMs: 2_000,
+    };
+    const owner = deviceKeys.pubkey;
+    expect(shopConfigFor(shop, owner, employee()).updatedAt).toBe(2_000);
+    expect(
+      shopConfigFor(shop, owner, employee({ updatedAtMs: 3_000 })).updatedAt,
+    ).toBe(3_000);
   });
 });
 

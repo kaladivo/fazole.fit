@@ -28,6 +28,8 @@ export const ShopConfig = appMessage("ShopConfig", {
   ownerPubkey: Pubkey,
   mintUrl: HttpUrl,
   employeeName: Schema.String,
+  /** When the owner last changed what this config carries; an older or equal one is a replay. */
+  updatedAt: UnixMillis,
 });
 export type ShopConfig = typeof ShopConfig.Type;
 

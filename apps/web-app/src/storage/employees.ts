@@ -1,9 +1,10 @@
 import { sqliteTrue } from "@evolu/common";
 import { useQuery } from "@evolu/react";
 import { Pubkey } from "@linky-fit/linkstr";
-import { Option, Schema } from "effect";
+import { Schema } from "effect";
 import type { AppEvolu } from "./evolu";
 import { mutation, useAppEvolu } from "./evolu";
+import { decodeRows, RowChangedAtMs } from "./rows";
 import { employeeDeviceIdFor, employeeIdFor } from "./schema";
 import type { EmployeeDeviceId, EmployeeId } from "./schema";
 
@@ -12,6 +13,7 @@ const EmployeeFields = Schema.Struct({
   name: Schema.NullOr(Schema.String),
   addedAtMs: Schema.Int,
   removedAtMs: Schema.NullOr(Schema.Int),
+  updatedAtMs: RowChangedAtMs,
 });
 const decodeEmployee = Schema.decodeUnknownOption(EmployeeFields);
 
@@ -32,15 +34,6 @@ export type EmployeeDevice = typeof DeviceFields.Type & {
   readonly id: EmployeeDeviceId;
 };
 
-const decodeRows =
-  <A, Id>(decode: (row: unknown) => Option.Option<A>) =>
-  (rows: ReadonlyArray<{ readonly id: Id } & Record<string, unknown>>) =>
-    rows.flatMap((row) =>
-      Option.toArray(
-        Option.map(decode(row), (fields) => ({ ...fields, id: row.id })),
-      ),
-    );
-
 const toEmployees = decodeRows<typeof EmployeeFields.Type, EmployeeId>(
   decodeEmployee,
 );
@@ -53,6 +46,7 @@ export const employeesQuery = (evolu: AppEvolu) =>
     db
       .selectFrom("employee")
       .selectAll()
+      .select((eb) => eb.fn.coalesce("updatedAt", "createdAt").as("changedAt"))
       .where("isDeleted", "is not", sqliteTrue)
       .orderBy("addedAtMs", "asc"),
   );

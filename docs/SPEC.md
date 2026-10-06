@@ -94,7 +94,7 @@ Language (cs/en), shop details (owner), backup phrase, restore, and a "reset thi
 
 - Device keys are the NIP-06 keys of each install. Messages are gift wrapped (NIP-17/59, NIP-44) through linkstr.
 - App messages are JSON with `{v:1, type, …}` and are validated with Effect Schema in `packages/core`:
-  - `ShopConfig` (owner → employee device): `shopId`, `shopName`, `iban`, `accountDisplay`, `ownerPubkey`, `mintUrl`, `employeeName`.
+  - `ShopConfig` (owner → employee device): `shopId`, `shopName`, `iban`, `accountDisplay`, `ownerPubkey`, `mintUrl`, `employeeName`, `updatedAt` (when the owner last changed the shop or the employee). The device applies only a config newer than the one it holds, and none from an owner who removed it, because the inbox replays old ones in any order.
   - `EmployeeRemoved` (owner → employee device).
   - `PaymentRecord` (employee device → owner): `paymentId`, `amountCzk` (haléře int), `sats?`, `method`, `status`, `vs?`, `createdAt`, `updatedAt`, `paidAt?`.
   - `LockedToken` (employee device → owner): `paymentId`, `token` (P2PK-locked to the owner).

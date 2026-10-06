@@ -26,7 +26,7 @@ import {
 } from "./withdrawals";
 import { shopId } from "./schema";
 import { saveSetting } from "./settings";
-import { saveShop } from "./shop";
+import { loadOwnShop, saveShop } from "./shop";
 import { createTestEvolu } from "./testing/testEvolu";
 
 const device = parsePubkey("a".repeat(64));
@@ -78,6 +78,19 @@ describe("shop", () => {
       iban: "CZ6508000000192000145399",
       accountDisplay: "19-2000145399/0800",
     });
+  });
+
+  it("dates the owner's shop by its last change", async () => {
+    const evolu = createTestEvolu();
+    const account = parseCzechAccount("19-2000145399/0800");
+    if (Either.isLeft(account)) throw account.left;
+    await saveShop(evolu, { name: "Kavárna", account: account.right });
+    const first = await loadOwnShop(evolu);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    await saveShop(evolu, { name: "Kavárna Nová", account: account.right });
+    const second = await loadOwnShop(evolu);
+    expect(first?.updatedAtMs).toBeGreaterThan(0);
+    expect(second?.updatedAtMs).toBeGreaterThan(first?.updatedAtMs ?? 0);
   });
 });
 
