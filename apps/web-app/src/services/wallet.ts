@@ -15,6 +15,7 @@ import type {
 } from "@linky-fit/linkshu";
 import type { DeviceKeys } from "@platitprosim/core";
 import { Effect, Either } from "effect";
+import { deferUpdateWhile } from "../pwa/update";
 import type { LinkshuRuntime } from "./runtimes";
 
 /** The device's Cashu wallet. */
@@ -58,7 +59,7 @@ export const createWallet = (
   keys: DeviceKeys,
 ): Wallet => {
   const run: Wallet["run"] = (effect) =>
-    runtime.runPromise(Effect.either(effect));
+    deferUpdateWhile(runtime.runPromise(Effect.either(effect)));
   const unlockingKey = P2pkUnlockingKey.make(keys.nostr.secretKeyHex);
   const transfers = () =>
     runtime.runPromise(Effect.flatMap(Tokens, (tokens) => tokens.transfers));

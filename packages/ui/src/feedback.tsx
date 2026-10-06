@@ -14,6 +14,8 @@ export interface NoticeProps {
   description?: string | undefined;
   tone?: Tone | undefined;
   icon?: IconName | undefined;
+  /** An app-wide banner: a compact accent strip with the action at the end of its row. */
+  solid?: boolean | undefined;
   action?: LabeledAction | undefined;
   /** Shows a close button; `label` is its accessibility label. */
   dismiss?: LabeledAction | undefined;
@@ -25,41 +27,50 @@ export function Notice({
   description,
   tone = "info",
   icon,
+  solid = false,
   action,
   dismiss,
 }: NoticeProps) {
   const colors = toneColors[tone];
+  const color = solid ? "$onAccent" : colors.color;
+  const actionButton = action ? (
+    <Button
+      size="sm"
+      variant="secondary"
+      alignSelf={solid ? "center" : "flex-start"}
+      marginTop={solid ? undefined : "$xs"}
+      onPress={action.onPress}
+    >
+      {action.label}
+    </Button>
+  ) : null;
   return (
     <Row
-      alignItems="flex-start"
+      alignItems={solid ? "center" : "flex-start"}
       gap="$md"
-      padding="$lg"
-      borderRadius="$control"
-      backgroundColor={colors.background}
+      paddingHorizontal="$lg"
+      paddingVertical={solid ? "$sm" : "$lg"}
+      borderRadius={solid ? undefined : "$control"}
+      backgroundColor={solid ? "$accent" : colors.background}
       role={tone === "danger" ? "alert" : "status"}
     >
-      <Icon name={icon ?? toneIcons[tone]} color={colors.color} />
+      <Icon name={icon ?? toneIcons[tone]} color={color} />
       <Stack flex={1} gap="$xs">
-        <Text variant="label" color={colors.color}>
+        <Text variant="label" color={color}>
           {title}
         </Text>
         {description ? (
-          <Text variant="label" fontWeight="$regular" color="$colorSubtle">
+          <Text
+            variant="label"
+            fontWeight="$regular"
+            color={solid ? "$onAccent" : "$colorSubtle"}
+          >
             {description}
           </Text>
         ) : null}
-        {action ? (
-          <Button
-            size="sm"
-            variant="secondary"
-            alignSelf="flex-start"
-            marginTop="$xs"
-            onPress={action.onPress}
-          >
-            {action.label}
-          </Button>
-        ) : null}
+        {solid ? null : actionButton}
       </Stack>
+      {solid ? actionButton : null}
       {dismiss ? (
         <IconButton
           icon="X"

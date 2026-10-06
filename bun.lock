@@ -47,6 +47,9 @@
         "react-native": "0.86.3",
         "react-native-svg": "15.15.4",
         "react-native-web": "0.21.3",
+        "workbox-precaching": "^7.4.0",
+        "workbox-routing": "^7.4.0",
+        "workbox-window": "^7.4.0",
       },
       "devDependencies": {
         "@evolu/sqlite-wasm": "2.2.4",
