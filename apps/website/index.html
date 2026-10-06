@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Platit prosím – platby QR kódem bez poplatků</title>
+    <meta
+      name="description"
+      content="Platební terminál v telefonu. Zákazník zaplatí převodem přes QR kód nebo bitcoinem. Bez poplatků, bez serveru, data zůstávají ve vašich zařízeních."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: light)"
+      content="#f1f5f9"
+    />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#020617"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="canonical" href="%SITE_URL%/" />
+    <link rel="alternate" hreflang="cs" href="%SITE_URL%/" />
+    <link rel="alternate" hreflang="en" href="%SITE_URL%/?lang=en" />
+    <link rel="alternate" hreflang="x-default" href="%SITE_URL%/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Platit prosím" />
+    <meta property="og:url" content="%SITE_URL%/" />
+    <meta
+      property="og:title"
+      content="Platit prosím – platby QR kódem bez poplatků"
+    />
+    <meta
+      property="og:description"
+      content="Telefon jako platební terminál. Převodem přes QR kód nebo bitcoinem, bez poplatků a bez serveru."
+    />
+    <meta property="og:image" content="%SITE_URL%/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Platit prosím: telefon s platebním terminálem a QR kódem"
+    />
+    <meta property="og:locale" content="cs_CZ" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Platit prosím – platby QR kódem bez poplatků"
+    />
+    <meta
+      name="twitter:description"
+      content="Telefon jako platební terminál. Převodem přes QR kód nebo bitcoinem, bez poplatků a bez serveru."
+    />
+    <meta name="twitter:image" content="%SITE_URL%/og.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Platit prosím",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web",
+        "url": "%SITE_URL%/",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CZK" }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
