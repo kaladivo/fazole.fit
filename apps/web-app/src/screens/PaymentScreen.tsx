@@ -1,4 +1,4 @@
-import { buildSpd } from "@platitprosim/core";
+import { buildBitcoinPaymentUri, buildSpd } from "@platitprosim/core";
 import {
   AmountDisplay,
   Button,
@@ -6,26 +6,40 @@ import {
   EmptyState,
   IconButton,
   Notice,
+  Pill,
   QRCode,
+  Row,
   Screen,
   SegmentedControl,
+  Spinner,
   Stack,
   StatusBadge,
   SuccessOverlay,
+  Text,
   TopBar,
 } from "@platitprosim/ui";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../i18n";
-import { formatCzkValue, formatTime } from "../i18n/format";
+import { formatCzkValue, formatTime, formatWhole } from "../i18n/format";
 import { navigateTo } from "../routing";
-import { changePaymentStatus, useAppEvolu, usePayment } from "../storage";
+import { useAppServices } from "../services";
+import type { BitcoinRequestFailure } from "../services";
+import {
+  bitcoinRequestOf,
+  cancelPayment,
+  completePayment,
+  useAppEvolu,
+  usePayment,
+} from "../storage";
 import type { Payment, ShopProfile } from "../storage";
 import { DetailRows } from "./DetailRows";
-import { statusLabels } from "./paymentLabels";
+import { methodLabels, statusLabels } from "./paymentLabels";
 
 const toTerminal = () => navigateTo("terminal");
 
-/** The customer-facing payment: Bank shows the SPD QR; Bitcoin arrives in a later slice. */
+type Leg = "bank" | "bitcoin";
+
+/** The customer-facing payment: an SPD QR for the bank, a BIP-321 QR for Lightning and Cashu. */
 export function PaymentScreen({
   paymentId,
   profile,
@@ -48,7 +62,7 @@ export function PaymentScreen({
         }
       />
       {payment ? (
-        <BankPayment payment={payment} profile={profile} />
+        <OpenPayment payment={payment} profile={profile} />
       ) : (
         <Screen width="narrow" centered>
           <EmptyState
@@ -63,7 +77,7 @@ export function PaymentScreen({
   );
 }
 
-function BankPayment({
+function OpenPayment({
   payment,
   profile,
 }: {
@@ -72,18 +86,17 @@ function BankPayment({
 }) {
   const { lang, t } = useI18n();
   const evolu = useAppEvolu();
-  const [paidAtMs, setPaidAtMs] = useState<number | null>(null);
+  // A payment reopened with a Bitcoin leg, e.g. after a reload, shows that leg again.
+  const [leg, setLeg] = useState<Leg>(() =>
+    bitcoinRequestOf(payment) ? "bitcoin" : "bank",
+  );
+  // The overlay celebrates a payment that settles while it is on screen.
+  const [openedPaid] = useState(payment.status === "paid");
   const amount = formatCzkValue(payment.amountCzk, lang);
   const open = payment.status === "pending";
 
-  const markPaid = async () => {
-    const now = Date.now();
-    await changePaymentStatus(evolu, payment, "paid", now);
-    setPaidAtMs(now);
-  };
-
   const cancel = async () => {
-    await changePaymentStatus(evolu, payment, "cancelled");
+    await cancelPayment(evolu, payment);
     toTerminal();
   };
 
@@ -92,18 +105,77 @@ function BankPayment({
       <SegmentedControl
         accessibilityLabel={t("paymentMethod")}
         size="lg"
-        value="bank"
-        onValueChange={() => {}}
+        value={leg}
+        onValueChange={setLeg}
         options={[
           { value: "bank", label: t("methodBank"), icon: "Landmark" },
-          {
-            value: "bitcoin",
-            label: t("methodBitcoinSoon"),
-            icon: "Bitcoin",
-            disabled: true,
-          },
+          { value: "bitcoin", label: t("methodBitcoin"), icon: "Bitcoin" },
         ]}
       />
+      {leg === "bank" ? (
+        <BankLeg payment={payment} profile={profile} />
+      ) : (
+        <BitcoinLeg payment={payment} profile={profile} />
+      )}
+      {open ? (
+        <Stack gap="$sm">
+          {leg === "bank" ? (
+            <Button
+              testID="payment-mark-paid"
+              size="lg"
+              icon="Check"
+              onPress={() => void completePayment(evolu, payment, "bank")}
+            >
+              {t("paymentMarkPaid")}
+            </Button>
+          ) : null}
+          <Button
+            testID="payment-cancel"
+            variant="ghost"
+            onPress={() => void cancel()}
+          >
+            {t("paymentCancel")}
+          </Button>
+        </Stack>
+      ) : openedPaid || payment.status !== "paid" ? (
+        <Stack gap="$md">
+          <StatusBadge
+            status={payment.status}
+            label={t(statusLabels[payment.status])}
+          />
+          <Notice title={t("paymentClosed")} />
+          <Button variant="secondary" onPress={toTerminal}>
+            {t("backToTerminal")}
+          </Button>
+        </Stack>
+      ) : (
+        <SuccessOverlay
+          title={t("paymentPaidTitle")}
+          amount={amount}
+          unit={t("currencyCzk")}
+          detail={t("paymentPaidDetail", {
+            method: t(methodLabels[payment.method]),
+            time: formatTime(payment.paidAtMs ?? payment.updatedAtMs, lang),
+          })}
+          action={{ label: t("paymentNew"), onPress: toTerminal }}
+          onDismiss={toTerminal}
+        />
+      )}
+    </Screen>
+  );
+}
+
+function BankLeg({
+  payment,
+  profile,
+}: {
+  payment: Payment;
+  profile: ShopProfile;
+}) {
+  const { lang, t } = useI18n();
+  const amount = formatCzkValue(payment.amountCzk, lang);
+  return (
+    <>
       <Stack alignItems="center" gap="$lg">
         <QRCode
           testID="payment-qr"
@@ -137,48 +209,145 @@ function BankPayment({
           ]}
         />
       </Card>
-      {open ? (
-        <Stack gap="$sm">
-          <Button
-            testID="payment-mark-paid"
-            size="lg"
-            icon="Check"
-            onPress={() => void markPaid()}
-          >
-            {t("paymentMarkPaid")}
-          </Button>
-          <Button
-            testID="payment-cancel"
-            variant="ghost"
-            onPress={() => void cancel()}
-          >
-            {t("paymentCancel")}
-          </Button>
-        </Stack>
-      ) : paidAtMs !== null ? null : (
-        <Stack gap="$md">
-          <StatusBadge
-            status={payment.status}
-            label={t(statusLabels[payment.status])}
-          />
-          <Notice title={t("paymentClosed")} />
-          <Button variant="secondary" onPress={toTerminal}>
-            {t("backToTerminal")}
-          </Button>
-        </Stack>
-      )}
-      {paidAtMs !== null ? (
-        <SuccessOverlay
-          title={t("paymentPaidTitle")}
-          amount={amount}
-          unit={t("currencyCzk")}
-          detail={t("paymentPaidDetail", {
-            time: formatTime(paidAtMs, lang),
+    </>
+  );
+}
+
+const COPIED_MS = 2_000;
+
+const failureTitles = {
+  "rate-unavailable": "bitcoinRateUnavailable",
+  "mint-unreachable": "bitcoinMintUnreachable",
+} as const satisfies Record<BitcoinRequestFailure, string>;
+
+/** Asks for the payment's Bitcoin leg while it is pending and has none, e.g. after its quote expired. */
+const useBitcoinRequest = (payment: Payment, profile: ShopProfile) => {
+  const { bitcoinPayments } = useAppServices();
+  const [failure, setFailure] = useState<BitcoinRequestFailure | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const latest = useRef({ payment, profile });
+  useEffect(() => {
+    latest.current = { payment, profile };
+  });
+  const missing =
+    payment.status === "pending" && bitcoinRequestOf(payment) === null;
+  useEffect(() => {
+    if (!missing) return;
+    let current = true;
+    void bitcoinPayments
+      .request(latest.current.payment, latest.current.profile)
+      .then((result) => {
+        if (current) setFailure(result);
+      });
+    return () => {
+      current = false;
+    };
+  }, [bitcoinPayments, missing, attempt, payment.id]);
+  return {
+    failure: missing ? failure : null,
+    retry: () => {
+      setFailure(null);
+      setAttempt((count) => count + 1);
+    },
+  };
+};
+
+function BitcoinLeg({
+  payment,
+  profile,
+}: {
+  payment: Payment;
+  profile: ShopProfile;
+}) {
+  const { lang, t } = useI18n();
+  const { failure, retry } = useBitcoinRequest(payment, profile);
+  const request = bitcoinRequestOf(payment);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), COPIED_MS);
+    return () => clearTimeout(timer);
+  }, [copied]);
+  const amount = formatCzkValue(payment.amountCzk, lang);
+
+  if (failure) {
+    return (
+      <Notice
+        tone="danger"
+        title={t(failureTitles[failure])}
+        description={t("bitcoinUnavailableHint")}
+        action={{ label: t("retry"), onPress: retry }}
+      />
+    );
+  }
+  if (request === null) {
+    return (
+      <Stack
+        alignItems="center"
+        justifyContent="center"
+        gap="$md"
+        minHeight="$hero"
+        testID="payment-bitcoin-preparing"
+      >
+        <Spinner size="lg" />
+        <Text muted>{t("paymentPreparing")}</Text>
+      </Stack>
+    );
+  }
+  const sats = formatWhole(request.sats, lang);
+  const uri = buildBitcoinPaymentUri(request.invoice, request.paymentRequest);
+  const copy = async () => {
+    await navigator.clipboard.writeText(uri);
+    setCopied(true);
+  };
+  return (
+    <>
+      <Stack alignItems="center" gap="$lg">
+        {/* No logo: a logo needs the highest error correction, and this payload is already dense. */}
+        <QRCode
+          testID="payment-bitcoin-qr"
+          size="lg"
+          accessibilityLabel={t("paymentBitcoinQr", {
+            amount: t("amountCzk", { amount }),
           })}
-          action={{ label: t("paymentNew"), onPress: toTerminal }}
-          onDismiss={toTerminal}
+          tooltip={t("paymentCopy")}
+          onPress={() => void copy()}
+          value={uri}
         />
-      ) : null}
-    </Screen>
+        <AmountDisplay
+          testID="payment-bitcoin-amount"
+          value={amount}
+          unit={t("currencyCzk")}
+          secondary={t("amountSats", { sats })}
+          size="md"
+        />
+        {copied ? (
+          <Row justifyContent="center">
+            <Pill label={t("paymentCopied")} tone="success" icon="Check" />
+          </Row>
+        ) : payment.status === "pending" ? (
+          <Row justifyContent="center">
+            <Pill label={t("paymentWaiting")} tone="accent" busy />
+          </Row>
+        ) : null}
+      </Stack>
+      <Card gap="$sm" paddingVertical="$lg">
+        <DetailRows
+          details={[
+            { label: t("paymentSats"), value: t("amountSats", { sats }) },
+            {
+              label: t("paymentRate"),
+              value: t("paymentRateValue", {
+                rate: formatWhole(request.czkPerBtc, lang),
+              }),
+            },
+            { label: t("paymentRecipient"), value: profile.name },
+          ]}
+        />
+        <Text variant="caption" muted>
+          {t("paymentBitcoinHint")}
+        </Text>
+      </Card>
+    </>
   );
 }

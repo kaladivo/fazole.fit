@@ -25,7 +25,7 @@ describe("dictionaries", () => {
 
 describe("translate", () => {
   it("fills placeholders", () => {
-    expect(translate("en")("walletBalanceSats", { sats: 21 })).toBe("21 sat");
+    expect(translate("en")("amountSats", { sats: 21 })).toBe("21 sat");
   });
 });
 

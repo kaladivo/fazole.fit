@@ -11,6 +11,8 @@
   "scripts": {
     "dev": "docker compose -f docker-compose.dev.yml up -d --wait && bun run --filter @platitprosim/web-app dev",
     "dev:services": "docker compose -f docker-compose.dev.yml up",
+    "mint:pay": "bun apps/web-app/scripts/localMint.ts pay",
+    "mint:token": "bun apps/web-app/scripts/localMint.ts token",
     "build": "bun run --filter @platitprosim/web-app build",
     "preview": "bun run --filter @platitprosim/web-app preview",
     "ui:dev": "bun run --filter @platitprosim/ui-book dev",

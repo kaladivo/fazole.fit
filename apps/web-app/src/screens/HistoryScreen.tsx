@@ -21,6 +21,7 @@ import {
   formatDate,
   formatDateTime,
   formatTime,
+  formatWhole,
 } from "../i18n/format";
 import { navigateTo, paymentRoute } from "../routing";
 import { useIdentity, usePayments } from "../storage";
@@ -116,6 +117,16 @@ export function HistoryScreen({ profile }: { profile: ShopProfile }) {
                   label: t("paymentMethod"),
                   value: t(methodLabels[selected.method]),
                 },
+                ...(selected.sats !== null && selected.method !== "bank"
+                  ? [
+                      {
+                        label: t("paymentSats"),
+                        value: t("amountSats", {
+                          sats: formatWhole(selected.sats, lang),
+                        }),
+                      },
+                    ]
+                  : []),
                 ...(selected.vs
                   ? [{ label: t("paymentVs"), value: selected.vs }]
                   : []),
@@ -134,7 +145,7 @@ export function HistoryScreen({ profile }: { profile: ShopProfile }) {
                 { label: t("historyCreatedBy"), value: creatorOf(selected) },
               ]}
             />
-            {selected.status === "pending" && selected.method === "bank" ? (
+            {selected.status === "pending" ? (
               <Button
                 testID="history-show-qr"
                 size="lg"

@@ -12,13 +12,31 @@ export type { Identity } from "./identity";
 export { linkshuStores } from "./linkshu";
 export { linkstrStores } from "./linkstr";
 export {
-  changePaymentStatus,
-  createBankPayment,
+  attachBitcoinRequest,
+  bitcoinRequestOf,
+  cancelPayment,
+  clearBitcoinRequest,
+  completePayment,
+  createPayment,
   loadPayments,
+  openBitcoinPayments,
   usePayment,
   usePayments,
 } from "./payments";
-export type { Payment } from "./payments";
+export type { BitcoinRequest, OpenPayment, Payment } from "./payments";
+export type { PaymentRowId, WithdrawalId } from "./schema";
+export { useWalletBalance } from "./wallet";
+export {
+  createWithdrawal,
+  finishWithdrawal,
+  loadWithdrawals,
+  useWithdrawals,
+} from "./withdrawals";
+export type {
+  Withdrawal,
+  WithdrawalKind,
+  WithdrawalStatus,
+} from "./withdrawals";
 export { saveSetting, useSetting } from "./settings";
 export type { SettingKey } from "./settings";
 export { saveShop, useShopProfile } from "./shop";

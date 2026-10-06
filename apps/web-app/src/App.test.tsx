@@ -6,6 +6,7 @@ import type { Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { navigateTo } from "./routing";
+import { createTestServices } from "./services/testing/testServices";
 import type { Route } from "./routing";
 import { saveSetting, saveShop } from "./storage";
 import type { AppEvolu } from "./storage";
@@ -23,7 +24,9 @@ const renderAt = async (route: Route, evolu: AppEvolu = createTestEvolu()) => {
   navigateTo(route);
   const container = document.body.appendChild(document.createElement("div"));
   root = createRoot(container);
-  await act(async () => root?.render(<App evolu={evolu} />));
+  await act(async () =>
+    root?.render(<App evolu={evolu} services={createTestServices(evolu)} />),
+  );
   return container;
 };
 

@@ -61,8 +61,11 @@ services:
       # Nutshell 0.20.3's limit_websocket ignores MINT_RATE_LIMIT, so NUT-17
       # subscriptions from several browsers need their own high limit.
       MINT_TRANSACTION_RATE_LIMIT_PER_MINUTE: "1000000"
-      # FakeWallet simulation knobs for payment-timing tests (defaults shown).
-      # FAKEWALLET_BRR: "true"                  # auto-settle created invoices
+      # FakeWallet settles nothing by itself: a top-up invoice is paid only when
+      # a wallet on this mint melts it (internal settlement), so a Lightning
+      # payment completes only once someone pays it. See AGENTS.md, "Paying locally".
+      FAKEWALLET_BRR: "false"
+      # Other FakeWallet simulation knobs (defaults shown).
       # FAKEWALLET_DELAY_INCOMING_PAYMENT: "3"  # seconds before a top-up invoice settles
       # FAKEWALLET_DELAY_OUTGOING_PAYMENT: "3"  # seconds before melt/pay returns
       # FAKEWALLET_PAY_INVOICE_STATE: SETTLED   # or FAILED | PENDING | UNKNOWN

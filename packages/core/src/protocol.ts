@@ -1,4 +1,4 @@
-import { Pubkey } from "@linky-fit/linkstr";
+import { appMessageChannel, AppNamespace, Pubkey } from "@linky-fit/linkstr";
 import { Schema } from "effect";
 import { CzechIban } from "./czechAccount";
 import { CzkAmount, Sats } from "./money";
@@ -67,3 +67,9 @@ const AppMessageJson = Schema.parseJson(AppMessage);
 
 export const decodeAppMessage = Schema.decodeUnknownEither(AppMessageJson);
 export const encodeAppMessage = Schema.encodeSync(AppMessageJson);
+
+/** The app's gift-wrapped message channel: `draft` to send a message, `decode` an `AppMessageReceived`. */
+export const appMessages = appMessageChannel(
+  AppNamespace.make("platitprosim"),
+  AppMessage,
+);

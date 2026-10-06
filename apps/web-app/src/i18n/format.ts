@@ -31,3 +31,9 @@ export const formatDateTime = (ms: number, lang: Lang) =>
     dateStyle: "medium",
     timeStyle: "short",
   }).format(ms);
+
+/** A whole number with grouping, e.g. sats "21 000" or a rate "2 512 346". */
+export const formatWhole = (value: number, lang: Lang) =>
+  new Intl.NumberFormat(locales[lang], { maximumFractionDigits: 0 }).format(
+    value,
+  );

@@ -72,3 +72,7 @@ export const czkToSats = (amount: CzkAmount, czkPerBtc: number): Sats => {
   const sats = (numerator + halerePerBtc - 1n) / halerePerBtc;
   return Sats.make(Number(sats));
 };
+
+/** The CZK value of `sats`, rounded to haléře, e.g. for an "≈ CZK" hint. */
+export const satsToCzk = (sats: number, czkPerBtc: number): CzkAmount =>
+  CzkAmount.make(Math.round((sats * czkPerBtc * 100) / Number(SATS_PER_BTC)));

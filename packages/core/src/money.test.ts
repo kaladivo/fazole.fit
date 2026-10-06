@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CzkAmount,
   czkToSats,
+  satsToCzk,
   formatCzk,
   type KeypadKey,
   keypadAmount,
@@ -53,5 +54,13 @@ describe("czkToSats", () => {
 
   it("returns zero for a zero amount", () => {
     expect(czkToSats(CzkAmount.make(0), 2_000_000)).toBe(0);
+  });
+});
+
+describe("satsToCzk", () => {
+  it("values sats in haléře at the rate", () => {
+    expect(satsToCzk(50_000, 2_000_000)).toBe(100_000);
+    expect(satsToCzk(43, 2_345_678.9)).toBe(101);
+    expect(satsToCzk(0, 2_000_000)).toBe(0);
   });
 });

@@ -7,6 +7,7 @@ import {
   NonNegativeInt,
   nullOr,
   PositiveInt,
+  PositiveNumber,
   SqliteBoolean,
   String,
 } from "@evolu/common";
@@ -32,6 +33,8 @@ export const OutboxJobRowId = id("OutboxJob");
 export type OutboxJobRowId = InferType<typeof OutboxJobRowId>;
 export const InboxCursorId = id("InboxCursor");
 export type InboxCursorId = InferType<typeof InboxCursorId>;
+export const WithdrawalId = id("Withdrawal");
+export type WithdrawalId = InferType<typeof WithdrawalId>;
 
 /** One install owns at most one shop and holds at most one membership, so every device converges on one row. */
 export const shopId = createIdFromString<"Shop">("shop");
@@ -121,9 +124,31 @@ export const AppSchema = {
     invoice: nullOr(NonEmptyString),
     // NUT-18 `creqA…` the customer can pay with Cashu.
     paymentRequest: nullOr(NonEmptyString),
+    // The rate the sats were priced at.
+    czkPerBtc: nullOr(PositiveNumber),
     // Employee: the P2PK token for the owner, kept until it is delivered.
     lockedToken: nullOr(NonEmptyString),
     forwardedAtMs: nullOr(PositiveInt),
+  },
+  /** Owner install: money taken out of the wallet. */
+  withdrawal: {
+    id: WithdrawalId,
+    // "lightning" | "linky"
+    kind: NonEmptyString100,
+    // The Lightning address or invoice, or the Linky npub.
+    target: NonEmptyString,
+    amountSats: PositiveInt,
+    // The Lightning fee actually paid.
+    feeSats: nullOr(NonNegativeInt),
+    // "pending" | "done" | "failed"
+    status: NonEmptyString100,
+    createdAtMs: PositiveInt,
+    completedAtMs: nullOr(PositiveInt),
+    // Lightning: the melt quote, settled by `Melt.resumePending` after a reload.
+    quoteId: nullOr(NonEmptyString1000),
+    // Linky: the linkshu send, returned to the wallet if delivery fails.
+    operationId: nullOr(NonEmptyString1000),
+    error: nullOr(NonEmptyString1000),
   },
   /** Small synced key/value state: language, theme. */
   setting: {

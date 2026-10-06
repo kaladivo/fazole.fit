@@ -16,7 +16,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@linky-fit/linkstr": "^0.3.1",
+    "@linky-fit/linkshu": "file:/Users/jarvis/.worktrees/linky-platitprosim/packages/linkshu/dist",
+    "@linky-fit/linkstr": "file:/Users/jarvis/.worktrees/linky-platitprosim/packages/linkstr/dist",
     "@noble/hashes": "^2.0.1",
     "@scure/bip32": "^2.0.1",
     "@scure/bip39": "^2.0.1",

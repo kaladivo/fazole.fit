@@ -1,14 +1,27 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import { appConfig } from "./config";
+import { createAppServices, runtimeConfigFrom } from "./services";
+import { loadIdentity } from "./storage";
 import { createBrowserEvolu } from "./storage/browserEvolu";
 import "./index.css";
 
 const root = document.getElementById("root");
 if (root) {
+  const evolu = createBrowserEvolu();
+  const services = loadIdentity(evolu).then((identity) => {
+    const started = createAppServices(
+      evolu,
+      identity,
+      runtimeConfigFrom(appConfig),
+    );
+    started.start();
+    return started;
+  });
   createRoot(root).render(
     <StrictMode>
-      <App evolu={createBrowserEvolu()} />
+      <App evolu={evolu} services={services} />
     </StrictMode>,
   );
 }

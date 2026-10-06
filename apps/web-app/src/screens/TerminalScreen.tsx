@@ -10,7 +10,7 @@ import {
 import { useState } from "react";
 import { useI18n } from "../i18n";
 import { navigateTo, paymentRoute } from "../routing";
-import { createBankPayment, useAppEvolu, useIdentity } from "../storage";
+import { createPayment, useAppEvolu, useIdentity } from "../storage";
 import type { ShopProfile } from "../storage";
 import {
   canRequestPayment,
@@ -28,7 +28,7 @@ export function TerminalScreen({ profile }: { profile: ShopProfile }) {
 
   const request = async () => {
     setRequesting(true);
-    const id = await createBankPayment(evolu, {
+    const id = await createPayment(evolu, {
       amountCzk: keypadAmount(input),
       createdBy: keys.nostr.pubkey,
     });

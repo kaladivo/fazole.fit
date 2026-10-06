@@ -35,6 +35,7 @@ import { SetupShopScreen } from "../screens/SetupShopScreen";
 import { TerminalScreen } from "../screens/TerminalScreen";
 import { WalletScreen } from "../screens/WalletScreen";
 import { WelcomeScreen } from "../screens/WelcomeScreen";
+import { useAppServices } from "../services";
 import { useShopProfile } from "../storage";
 import type { ShopProfile } from "../storage";
 
@@ -110,6 +111,10 @@ function Sections({
 }) {
   const { t } = useI18n();
   const { wide } = useMedia();
+  const { nostr } = useAppServices();
+  useEffect(() => {
+    void nostr.publishName(profile.name);
+  }, [nostr, profile.name]);
   const Screen = sectionScreens[section];
   const items = sectionsFor(profile.role).map(
     (value): NavItem<Section> => ({
