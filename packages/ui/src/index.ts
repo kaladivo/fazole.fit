@@ -37,7 +37,6 @@ export type {
 export { TextField } from "./fields";
 export type { TextFieldProps } from "./fields";
 export { MnemonicGrid } from "./mnemonic";
-export { fillWords } from "./mnemonic-words";
 export type { MnemonicGridProps } from "./mnemonic";
 
 // Display and lists

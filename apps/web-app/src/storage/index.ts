@@ -4,6 +4,7 @@ export { StorageProvider } from "./StorageProvider";
 export {
   loadIdentity,
   parseMnemonic,
+  phraseWords,
   resetDevice,
   restoreDevice,
   useIdentity,

@@ -39,12 +39,12 @@ One install is either an **owner** (it has a `shop` row) or an **employee** (it 
 ### Owner onboarding
 
 1. The owner chooses "Set up a shop", then enters the shop name and a Czech bank account (`[prefix-]number/bankCode`). The account is validated (mod-11 checks) and converted to an IBAN.
-2. The app creates the identity and shows the backup phrase. The owner can skip this step, and the phrase stays available in Settings.
+2. The app creates the identity and offers the backup phrase, masked until revealed, to save to the browser's password manager or copy. The owner can skip this step, and the phrase stays available in Settings.
 3. The owner lands on the terminal.
 
 ### Restore
 
-"I have a backup phrase": the user enters the 24 words, the app calls `evolu.restoreAppOwner`, the data syncs, and the app routes by role.
+"I have a backup phrase": the user types, pastes or lets the password manager fill the 24 words into one field, the app calls `evolu.restoreAppOwner`, the data syncs, and the app routes by role.
 
 ### Adding an employee
 

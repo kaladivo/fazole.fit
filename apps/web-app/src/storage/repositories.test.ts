@@ -57,7 +57,7 @@ describe("identity", () => {
   it("normalises a typed phrase and rejects an invalid one", async () => {
     const { mnemonic } = await loadIdentity(createTestEvolu());
     expect(
-      parseMnemonic(`  ${mnemonic.toUpperCase().replaceAll(" ", "\n ")} `),
+      parseMnemonic(`  ${mnemonic.toUpperCase().replaceAll(" ", ",\n ")} `),
     ).toBe(mnemonic);
     expect(parseMnemonic(mnemonic.replace(/\w+$/u, "zoo"))).toBeNull();
   });
