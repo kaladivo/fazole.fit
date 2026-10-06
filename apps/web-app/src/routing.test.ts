@@ -30,7 +30,6 @@ describe("resolveRoute", () => {
     expect(resolveRoute("restoring", null)).toBe("restoring");
     expect(resolveRoute("employee", null)).toBe("employee");
     expect(resolveRoute("terminal", null)).toBe("welcome");
-    expect(resolveRoute("backup", null)).toBe("welcome");
     expect(resolveRoute(paymentRoute("x"), null)).toBe("welcome");
   });
 
@@ -44,7 +43,6 @@ describe("resolveRoute", () => {
       expect(resolveRoute(route, "owner")).toBe("terminal");
     }
     expect(resolveRoute("history", "owner")).toBe("history");
-    expect(resolveRoute("backup", "owner")).toBe("backup");
     expect(resolveRoute("restore", "owner")).toBe("restore");
     expect(resolveRoute(paymentRoute("x"), "owner")).toBe("pay/x");
   });

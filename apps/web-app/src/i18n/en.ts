@@ -51,9 +51,6 @@ export const en: Record<keyof typeof cs, string> = {
   backupSaveUnavailable:
     "This browser can't save the phrase to a password manager. Copy it instead.",
   backupSaveFailed: "Saving to the password manager failed.",
-  backupDone: "I've saved it",
-  backupLater: "Later",
-  backupLaterHint: "You'll find the phrase in Settings at any time.",
 
   restoreTitle: "Restore from a backup phrase",
   restoreDescription:

@@ -2,7 +2,8 @@ import { Button, Screen, Stack, Text, TopBar } from "@platitprosim/ui";
 import { useState } from "react";
 import { useI18n } from "../i18n";
 import { navigateTo } from "../routing";
-import { saveShop, useAppEvolu } from "../storage";
+import { saveBackupPhrase } from "../passwordManager";
+import { saveShop, useAppEvolu, useIdentity } from "../storage";
 import { BackButton } from "./BackButton";
 import { ShopFields } from "./ShopFields";
 import { useShopForm } from "./shopForm";
@@ -10,6 +11,7 @@ import { useShopForm } from "./shopForm";
 export function SetupShopScreen() {
   const { t } = useI18n();
   const evolu = useAppEvolu();
+  const identity = useIdentity();
   const form = useShopForm();
   const [saving, setSaving] = useState(false);
 
@@ -18,7 +20,8 @@ export function SetupShopScreen() {
     if (!details) return;
     setSaving(true);
     await saveShop(evolu, details);
-    navigateTo("backup");
+    await saveBackupPhrase(identity, details.name);
+    navigateTo("terminal");
   };
 
   return (

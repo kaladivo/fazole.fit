@@ -39,7 +39,7 @@ One install is either an **owner** (it has a `shop` row) or an **employee** (it 
 ### Owner onboarding
 
 1. The owner chooses "Set up a shop", then enters the shop name and a Czech bank account (`[prefix-]number/bankCode`). The account is validated (mod-11 checks) and converted to an IBAN.
-2. The app creates the identity and offers the backup phrase, masked until revealed, to save to the browser's password manager or copy. The owner can skip this step, and the phrase stays available in Settings.
+2. The app creates the identity and offers its backup phrase to the browser's password manager under the shop name. Settings shows the phrase, masked until revealed, to save to the password manager again or copy.
 3. The owner lands on the terminal.
 
 ### Restore

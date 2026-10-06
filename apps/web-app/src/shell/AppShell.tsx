@@ -25,7 +25,6 @@ import {
   useRoute,
 } from "../routing";
 import type { Flow, Section } from "../routing";
-import { BackupScreen } from "../screens/BackupScreen";
 import { EmployeeScreen } from "../screens/EmployeeScreen";
 import { EmployeesScreen } from "../screens/EmployeesScreen";
 import { HistoryScreen } from "../screens/HistoryScreen";
@@ -55,7 +54,6 @@ const sectionScreens: Record<
 const flowScreens: Record<Flow, ComponentType> = {
   welcome: WelcomeScreen,
   setup: SetupShopScreen,
-  backup: BackupScreen,
   restore: RestoreScreen,
   restoring: RestoringScreen,
   employee: EmployeeScreen,

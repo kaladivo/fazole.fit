@@ -48,9 +48,6 @@ export const cs = {
   backupSaveUnavailable:
     "Tento prohlížeč neumí uložit frázi do správce hesel. Zkopírujte ji.",
   backupSaveFailed: "Uložení do správce hesel se nepovedlo.",
-  backupDone: "Mám ji uloženou",
-  backupLater: "Později",
-  backupLaterHint: "Frázi najdete kdykoli v nastavení.",
 
   restoreTitle: "Obnovit ze záložní fráze",
   restoreDescription:

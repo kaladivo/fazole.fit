@@ -3,7 +3,7 @@ import type { Tone } from "@platitprosim/ui";
 import { useState } from "react";
 import { useI18n } from "../i18n";
 import type { I18nKey } from "../i18n";
-import { saveToPasswordManager } from "../passwordManager";
+import { saveBackupPhrase } from "../passwordManager";
 import { useIdentity, useShopProfile } from "../storage";
 
 type Feedback = "copied" | "copyFailed" | "saved" | "unsupported" | "failed";
@@ -19,7 +19,8 @@ const feedbackNotices: Record<Feedback, { title: I18nKey; tone: Tone }> = {
 /** The install's backup phrase, masked until revealed, to save to a password manager or copy. */
 export function BackupPhrase() {
   const { t } = useI18n();
-  const { mnemonic, keys } = useIdentity();
+  const identity = useIdentity();
+  const { mnemonic } = identity;
   const shopName = useShopProfile()?.name ?? t("appName");
   const words = mnemonic.split(" ");
   const [visible, setVisible] = useState(false);
@@ -34,13 +35,7 @@ export function BackupPhrase() {
     }
   };
   const save = async () =>
-    setFeedback(
-      await saveToPasswordManager({
-        id: `fazole.fit:${keys.nostr.npub}`,
-        name: shopName,
-        password: mnemonic,
-      }),
-    );
+    setFeedback(await saveBackupPhrase(identity, shopName));
 
   const notice = feedback ? feedbackNotices[feedback] : null;
   return (
