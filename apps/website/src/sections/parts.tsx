@@ -152,7 +152,12 @@ export function PointGrid({
 }) {
   const { wide } = useMedia();
   const card = (point: Point) => (
-    <Card key={point.title} flex={1} gap="$lg" padding="$xxl">
+    <Card
+      key={point.title}
+      flex={wide ? 1 : undefined}
+      gap="$lg"
+      padding="$xxl"
+    >
       <IconTile icon={point.icon} />
       <Stack gap="$xs">
         <Text variant="title" color="$colorStrong">
