@@ -3,6 +3,12 @@ import type { cs } from "./cs";
 export const en: Record<keyof typeof cs, string> = {
   appName: "Platit prosím",
   appTagline: "A payment terminal for QR payments by bank or bitcoin.",
+  loading: "Loading…",
+  back: "Back",
+  close: "Close",
+  cancel: "Cancel",
+  save: "Save",
+  comingSoon: "Coming soon",
 
   welcomeSetupShop: "Set up a shop",
   welcomeSetupShopDescription: "I'm the owner and want to take payments.",
@@ -10,6 +16,55 @@ export const en: Record<keyof typeof cs, string> = {
   welcomeEmployeeDescription: "I'll log in with Linky.",
   welcomeRestore: "I have a backup phrase",
   welcomeRestoreDescription: "Restore a shop on this device.",
+
+  setupTitle: "Set up a shop",
+  setupDescription:
+    "Payments go straight to your bank account. You can change the details later in Settings.",
+  shopName: "Shop name",
+  shopNamePlaceholder: "Linden Tree Café",
+  shopNameHint: "Customers see it as the payment message.",
+  shopNameRequired: "Enter the shop name.",
+  bankAccount: "Bank account",
+  bankAccountPlaceholder: "123456789/0800",
+  bankAccountHint: "As [prefix-]number/bank code.",
+  bankAccountValid: "{bank} · {iban}",
+  bankAccountInvalidFormat:
+    "Enter the account as number/bank code, e.g. 123456789/0800.",
+  bankAccountInvalidChecksum:
+    "This account number doesn't exist. Check for typos.",
+  bankAccountUnknownBank: "Unknown bank code.",
+  setupContinue: "Continue",
+
+  backupTitle: "Backup phrase",
+  backupDescription:
+    "These {count} words are the only backup of the shop, its history and its wallet. Write them down on paper and keep them somewhere safe.",
+  backupWarning:
+    "Never show the words to anyone. Whoever knows them can access the shop.",
+  backupWords: "Backup phrase words",
+  backupWord: "Word {position}",
+  backupDone: "I wrote it down",
+  backupLater: "Later",
+  backupLaterHint: "You'll find the phrase in Settings at any time.",
+
+  restoreTitle: "Restore from a backup phrase",
+  restoreDescription:
+    "Enter the {count} words of your backup phrase. You can paste the whole phrase into the first box.",
+  restoreReplaceWarning:
+    "Restoring replaces the shop on this device. Without its backup phrase it can't be brought back.",
+  restoreInvalid: "These words aren't a valid backup phrase. Check each word.",
+  restoreSubmit: "Restore",
+  restoringTitle: "Restoring your shop…",
+  restoringDescription:
+    "Downloading your data from the sync server. Keep the app open.",
+  restoringSlowTitle: "Nothing has arrived yet",
+  restoringSlowDescription:
+    "Check the internet connection. If this phrase never set up a shop, there is nothing to restore.",
+  restoringStartOver: "Start over",
+
+  employeeTitle: "Log in with Linky",
+  employeeDescription:
+    "Your shop owner adds you using your Linky profile. Logging in with Linky arrives in the next version.",
+  employeeLogin: "Log in with Linky",
 
   navigation: "Main sections",
   sectionTerminal: "Terminal",
@@ -19,13 +74,49 @@ export const en: Record<keyof typeof cs, string> = {
   sectionSettings: "Settings",
 
   currencyCzk: "CZK",
+  amountCzk: "{amount} CZK",
   amount: "Amount",
-  keypadDecimal: "Decimal comma",
+  keypadDecimal: "Decimal point",
   keypadBackspace: "Delete",
   requestPayment: "Request payment",
 
+  payment: "Payment",
+  paymentMethod: "Payment method",
+  methodBank: "Bank",
+  methodBitcoinSoon: "Bitcoin (soon)",
+  methodLightning: "Lightning",
+  methodCashu: "Cashu",
+  paymentBankQr: "QR code to pay {amount} by bank",
+  paymentVs: "Variable symbol",
+  paymentAccount: "Account",
+  paymentRecipient: "Recipient",
+  paymentMarkPaid: "Mark as paid",
+  paymentCancel: "Cancel payment",
+  paymentPaidTitle: "Paid",
+  paymentPaidDetail: "Bank transfer · {time}",
+  paymentNew: "New payment",
+  paymentNotFound: "Payment not found",
+  paymentNotFoundDescription: "It may not have synced to this device yet.",
+  paymentClosed: "This payment is no longer open.",
+  backToTerminal: "Back to the terminal",
+
+  statusPending: "Pending",
+  statusPaid: "Paid",
+  statusCancelled: "Cancelled",
+
   historyEmptyTitle: "No payments yet",
   historyEmptyDescription: "Payments you create in the terminal appear here.",
+  historyToday: "Today",
+  historyYesterday: "Yesterday",
+  historyDayTotal: "Received {amount}",
+  historyRow: "{time} · {creator}",
+  historyMe: "Me",
+  historyDetail: "Payment details",
+  historyStatus: "Status",
+  historyCreated: "Created",
+  historyPaidAt: "Paid",
+  historyCreatedBy: "Created by",
+  historyShowQr: "Show the QR code",
 
   employeesEmptyTitle: "No employees yet",
   employeesEmptyDescription: "Add an employee by scanning their Linky profile.",
@@ -37,15 +128,29 @@ export const en: Record<keyof typeof cs, string> = {
   walletSendToLinky: "Send to Linky",
 
   settingsLanguage: "Language",
+  settingsTheme: "Appearance",
+  themeSystem: "System",
+  themeLight: "Light",
+  themeDark: "Dark",
   settingsShop: "Shop",
-  settingsShopDetails: "Shop details",
+  settingsShopEdit: "Edit shop details",
   settingsSecurity: "Security",
   settingsBackupPhrase: "Backup phrase",
+  settingsBackupConfirmTitle: "Show the backup phrase?",
+  settingsBackupConfirmDescription: "Make sure nobody can see your screen.",
+  settingsBackupShow: "Show",
   settingsRestore: "Restore from backup",
+  settingsRestoreConfirmTitle: "Restore a different shop?",
+  settingsRestoreConfirmDescription:
+    "Restoring replaces the shop on this device. Make sure you have its backup phrase before you continue.",
+  settingsRestoreContinue: "Continue",
   settingsReset: "Reset this device",
+  settingsResetConfirmTitle: "Reset this device?",
+  settingsResetConfirmDescription:
+    "This deletes the shop, its history and the wallet from this device. Without the backup phrase they can't be restored.",
+  settingsResetConfirm: "Reset",
   settingsAbout: "About",
   settingsMint: "Mint",
   languageCs: "Čeština",
   languageEn: "English",
-  comingSoon: "Coming soon",
 };

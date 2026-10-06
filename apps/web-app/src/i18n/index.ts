@@ -13,6 +13,19 @@ export type Translate = (
 
 export const defaultLang: Lang = "cs";
 
+export const isLang = (value: unknown): value is Lang =>
+  value === "cs" || value === "en";
+
+/** The first browser language the app speaks; Slovak reads Czech. */
+export const detectLang = (languages: readonly string[]): Lang => {
+  for (const tag of languages) {
+    const base = tag.toLowerCase().split("-")[0];
+    if (base === "cs" || base === "sk") return "cs";
+    if (base === "en") return "en";
+  }
+  return defaultLang;
+};
+
 /** Looks the key up in `lang` and fills its `{name}` placeholders from `params`. */
 export const translate =
   (lang: Lang): Translate =>

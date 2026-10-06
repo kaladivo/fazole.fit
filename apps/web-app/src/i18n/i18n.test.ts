@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dictionaries, translate } from ".";
+import { detectLang, dictionaries, translate } from ".";
 import type { I18nKey } from ".";
 
 const placeholders = (text: string) =>
@@ -26,5 +26,14 @@ describe("dictionaries", () => {
 describe("translate", () => {
   it("fills placeholders", () => {
     expect(translate("en")("walletBalanceSats", { sats: 21 })).toBe("21 sat");
+  });
+});
+
+describe("detectLang", () => {
+  it("picks the first language the app speaks, else Czech", () => {
+    expect(detectLang(["de-AT", "en-US", "cs"])).toBe("en");
+    expect(detectLang(["sk-SK", "en"])).toBe("cs");
+    expect(detectLang(["de"])).toBe("cs");
+    expect(detectLang([])).toBe("cs");
   });
 });

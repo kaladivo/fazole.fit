@@ -12,7 +12,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       // Icons, favicon and apple-touch-icon are generated from public/logo.svg (pwa-assets.config.ts).
       pwaAssets: { config: true, injectThemeColor: false },
-      workbox: { globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"] },
+      // sqlite3.wasm is precached too, so Evolu opens its database offline.
+      workbox: { globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2,wasm}"] },
       manifest: {
         name: "Platit prosím",
         short_name: "Platit prosím",
@@ -27,6 +28,9 @@ export default defineConfig({
       },
     }),
   ],
+  // Evolu's web package starts its database worker from a URL next to its own module, which prebundling would move.
+  optimizeDeps: { exclude: ["@evolu/web"] },
+  worker: { format: "es" },
   build: {
     rollupOptions: {
       output: {

@@ -14,7 +14,14 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@evolu/common": "7.4.1",
+    "@evolu/react": "10.4.0",
+    "@evolu/web": "2.4.0",
+    "@linky-fit/linkshu": "0.3.1",
+    "@linky-fit/linkstr": "0.3.1",
+    "@platitprosim/core": "workspace:*",
     "@platitprosim/ui": "workspace:*",
+    "effect": "^3.19.19",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-native": "0.86.3",
@@ -22,6 +29,7 @@
     "react-native-web": "0.21.3"
   },
   "devDependencies": {
+    "@evolu/sqlite-wasm": "2.2.4",
     "@platitprosim/config": "workspace:*",
     "@types/node": "^24.10.1",
     "@types/react": "^19.0.0",

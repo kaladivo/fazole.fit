@@ -79,3 +79,5 @@ export type {
 } from "./payments";
 export { ScannerFrame } from "./scanner";
 export type { ScannerFrameProps } from "./scanner";
+export { QRScanner } from "./qrScanner";
+export type { QRScannerProps } from "./qrScanner";

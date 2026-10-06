@@ -3,7 +3,7 @@ import { bytesToHex } from "@noble/hashes/utils.js";
 import { mnemonicToSeedSync } from "@scure/bip39";
 import { Either } from "effect";
 import { describe, expect, it } from "vitest";
-import { deriveDeviceKeys, parsePubkeyInput } from "./keys";
+import { deriveDeviceKeys, isMnemonicWord, parsePubkeyInput } from "./keys";
 
 // NIP-06 test vectors.
 const vectors = [
@@ -50,6 +50,15 @@ describe("deriveDeviceKeys", () => {
       "leader monkey parrot ring guide accident before fence cannon height naive naive",
     );
     expect(Either.isLeft(result)).toBe(true);
+  });
+});
+
+describe("isMnemonicWord", () => {
+  it("accepts BIP-39 words in any case and rejects the rest", () => {
+    expect(isMnemonicWord(" Abandon ")).toBe(true);
+    expect(isMnemonicWord("zoo")).toBe(true);
+    expect(isMnemonicWord("abandonx")).toBe(false);
+    expect(isMnemonicWord("")).toBe(false);
   });
 });
 

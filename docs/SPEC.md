@@ -20,7 +20,7 @@ The sibling project `../linky` (`/Users/jarvis/workspace/linky`) is the referenc
 ## Storage rules
 
 - All app data lives in Evolu. Nothing goes in localStorage, sessionStorage or IndexedDB directly. The Evolu owner secret is the one thing Evolu persists itself.
-- Evolu creates its own AppOwner. Its 12-word mnemonic is the single backup of a device identity. Everything is restorable: restoring the mnemonic on a new device brings back the shop, the history, the wallet proofs, the employees and the membership.
+- Evolu creates its own AppOwner. Its 24-word mnemonic (Evolu 7's native 32-byte owner secret) is the single backup of a device identity. Everything is restorable: restoring the mnemonic on a new device brings back the shop, the history, the wallet proofs, the employees and the membership.
 - Keys come from the BIP-39 seed of that mnemonic:
   - Nostr key: NIP-06 `m/44'/1237'/0'/0/0`.
   - Cashu wallet: linkshu `bip39Seed`, which is the BIP-39 seed itself.

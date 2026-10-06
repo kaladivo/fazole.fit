@@ -31,6 +31,10 @@ export interface DeviceKeys {
   readonly bip39Seed: Uint8Array;
 }
 
+/** Whether `word` is in the English BIP-39 wordlist, e.g. to flag a mistyped backup word. */
+export const isMnemonicWord = (word: string): boolean =>
+  wordlist.includes(word.trim().toLowerCase());
+
 const normalizeMnemonic = (mnemonic: string): string =>
   mnemonic.trim().toLowerCase().split(/\s+/).join(" ");
 

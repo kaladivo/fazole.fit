@@ -79,5 +79,39 @@ export const payments: Section = {
         </UI.Stack>
       );
     },
+    QRScanner: () => {
+      const [scanning, setScanning] = useState(false);
+      const [scanned, setScanned] = useState<string>();
+      return (
+        <UI.Stack alignItems="center">
+          {scanning ? (
+            <UI.QRScanner
+              accessibilityLabel="Camera"
+              hint="Point the camera at a QR code."
+              unavailableHint="The camera is not available. Allow it, or open the book over HTTPS."
+              onScan={setScanned}
+            />
+          ) : (
+            <UI.ScannerFrame
+              accessibilityLabel="Camera off"
+              hint="The scanner asks for the camera when it mounts."
+            />
+          )}
+          <UI.Button
+            variant="secondary"
+            size="sm"
+            icon="Camera"
+            onPress={() => setScanning(!scanning)}
+          >
+            {scanning ? "Stop camera" : "Start camera"}
+          </UI.Button>
+          {scanned ? (
+            <UI.Text mono variant="caption" textAlign="center">
+              {scanned}
+            </UI.Text>
+          ) : null}
+        </UI.Stack>
+      );
+    },
   },
 };

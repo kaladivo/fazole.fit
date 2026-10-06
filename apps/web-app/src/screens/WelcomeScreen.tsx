@@ -31,21 +31,21 @@ export function WelcomeScreen() {
           icon="Store"
           title={t("welcomeSetupShop")}
           description={t("welcomeSetupShopDescription")}
-          onPress={() => navigateTo("terminal")}
+          onPress={() => navigateTo("setup")}
         />
         <ListRow
           testID="welcome-employee"
           icon="Users"
           title={t("welcomeEmployee")}
           description={t("welcomeEmployeeDescription")}
-          onPress={() => navigateTo("terminal")}
+          onPress={() => navigateTo("employee")}
         />
         <ListRow
           testID="welcome-restore"
           icon="KeyRound"
           title={t("welcomeRestore")}
           description={t("welcomeRestoreDescription")}
-          onPress={() => navigateTo("terminal")}
+          onPress={() => navigateTo("restore")}
         />
       </Card>
       <Stack width="$picker" alignSelf="center">
