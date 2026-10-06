@@ -2,10 +2,12 @@ import { keypadAmount } from "@platitprosim/core";
 import {
   AmountDisplay,
   Button,
+  IconButton,
   Keypad,
   Screen,
   Stack,
   Text,
+  useMedia,
 } from "@platitprosim/ui";
 import { useState } from "react";
 import { useI18n } from "../i18n";
@@ -25,6 +27,7 @@ export function TerminalScreen({ profile }: { profile: ShopProfile }) {
   const { keys } = useIdentity();
   const [input, setInput] = useState("");
   const [requesting, setRequesting] = useState(false);
+  const { wide } = useMedia();
 
   const request = async () => {
     setRequesting(true);
@@ -72,6 +75,16 @@ export function TerminalScreen({ profile }: { profile: ShopProfile }) {
       >
         {t("requestPayment")}
       </Button>
+      {wide ? null : (
+        <Stack alignItems="center">
+          <IconButton
+            testID="terminal-history"
+            icon="History"
+            accessibilityLabel={t("sectionHistory")}
+            onPress={() => navigateTo("history")}
+          />
+        </Stack>
+      )}
     </Screen>
   );
 }
