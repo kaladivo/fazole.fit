@@ -15,7 +15,6 @@ export type Section = (typeof sections)[number];
 export const flows = [
   "welcome",
   "setup",
-  "backup",
   "restore",
   "restoring",
   "employee",
@@ -78,9 +77,7 @@ export const resolveRoute = (
       ? route
       : "welcome";
   }
-  if (route === "backup" || route === "restore" || isPaymentRoute(route)) {
-    return route;
-  }
+  if (route === "restore" || isPaymentRoute(route)) return route;
   return isSection(route) && sectionsFor(role).includes(route)
     ? route
     : "terminal";
