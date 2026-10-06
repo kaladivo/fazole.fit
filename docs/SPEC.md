@@ -92,6 +92,8 @@ One install is either an **owner** (it has a `shop` row) or an **employee** (it 
 
 Language (cs/en), shop details (owner), backup phrase, restore, and a "reset this device" action behind a confirmation.
 
+Nostr relays and Evolu servers, as in linky: each lists the defaults, which stay, then the shop's own, which can be added (`wss://`) and removed. Each shows whether it is connected: Nostr relays from linkstr's `RelayHealth`, Evolu servers by opening a WebSocket. The own lists live in the synced `setting` table. Evolu syncs the app owner with an added server right away (`evolu.useOwner`); the Nostr runtime is built once per launch, so saving a relay reloads the app.
+
 ## Protocol (Nostr)
 
 - Device keys are the NIP-06 keys of each install. Messages are gift wrapped (NIP-17/59, NIP-44) through linkstr.

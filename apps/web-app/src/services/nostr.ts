@@ -5,6 +5,7 @@ import {
   OutboxRef,
   ProfileMetadata,
   Profiles,
+  RelayHealth,
   TokenMessageDraft,
   UnixSeconds,
   WrapInbox,
@@ -16,6 +17,7 @@ import type {
   LinkstrServices,
   OutboxResult,
   Pubkey,
+  RelayHealthSnapshot,
   RelayUrl,
   RumorFixedOperation,
   WrapInboxEvent,
@@ -76,6 +78,10 @@ export interface Nostr {
   ) => Promise<EnqueueReceipt>;
   /** Publishes the device's kind-0 name, so wallets show the shop instead of a stranger. */
   readonly publishName: (name: string) => Promise<void>;
+  /** Calls `onChange` with every relay health snapshot until the returned stop is called. */
+  readonly watchRelayHealth: (
+    onChange: (health: RelayHealthSnapshot) => void,
+  ) => () => void;
   readonly onInboxEvent: (handler: InboxHandler) => () => void;
   /** Every app message of the fazole.fit channel that matches its schema. */
   readonly onAppMessage: (handler: AppMessageHandler) => () => void;
@@ -187,16 +193,21 @@ export const createNostr = (
 
   let started = false;
 
+  const fork = (
+    effect: Effect.Effect<unknown, unknown, LinkstrServices | RelayHealth>,
+    label: string,
+  ) => {
+    const fiber = runtime.runFork(effect.pipe(logDeath(label)));
+    return () => {
+      runtime.runFork(Fiber.interrupt(fiber));
+    };
+  };
+
   return {
     pubkey,
     nprofile: encodeNprofile(pubkey, relays),
     run: (effect, options) => runtime.runPromise(effect, options),
-    fork: (effect, label) => {
-      const fiber = runtime.runFork(effect.pipe(logDeath(label)));
-      return () => {
-        runtime.runFork(Fiber.interrupt(fiber));
-      };
-    },
+    fork,
     sendAppMessage: (to, message, ref) =>
       enqueue(
         { _tag: "appMessage", draft: appMessages.draft(to, message) },
@@ -226,6 +237,15 @@ export const createNostr = (
           () => undefined,
           (error: unknown) => console.warn("profile not published", error),
         ),
+    watchRelayHealth: (onChange) =>
+      fork(
+        Effect.flatMap(RelayHealth, (health) =>
+          Stream.runForEach(health.changes, (snapshot) =>
+            Effect.sync(() => onChange(snapshot)),
+          ),
+        ),
+        "relay health",
+      ),
     onInboxEvent: (handler) => subscribe(inboxHandlers, handler),
     onAppMessage: (handler) => subscribe(appMessageHandlers, handler),
     onOutboxResult: (refPrefix, handler) =>

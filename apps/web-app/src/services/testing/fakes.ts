@@ -38,6 +38,7 @@ export const fakeNostr = (overrides: Partial<Nostr> = {}) => {
     sendAppMessage: () => Promise.reject(new Error("fake nostr")),
     sendToken: () => Promise.reject(new Error("fake nostr")),
     publishName: () => Promise.resolve(),
+    watchRelayHealth: () => () => {},
     onInboxEvent: (handler) => {
       inbox.push(handler);
       return () => {};

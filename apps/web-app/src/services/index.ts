@@ -27,3 +27,5 @@ export type {
   Withdrawals,
   WithdrawFailure,
 } from "./withdrawals";
+export { useRelayStatuses, useWebSocketStatuses } from "./serverStatus";
+export type { ServerStatus, ServerStatuses } from "./serverStatus";

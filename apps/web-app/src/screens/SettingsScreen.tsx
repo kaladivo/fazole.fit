@@ -9,27 +9,36 @@ import {
   SegmentedControl,
   Text,
 } from "@platitprosim/ui";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { appConfig } from "../config";
 import { themes, useThemeSetting } from "../colorMode";
 import type { ThemeSetting } from "../colorMode";
 import { useI18n } from "../i18n";
 import type { I18nKey } from "../i18n";
-import { navigateTo } from "../routing";
+import { navigateTo, reloadAt } from "../routing";
 import { shortNpub } from "@platitprosim/core";
 import type { Pubkey } from "@linky-fit/linkstr";
-import { useAppServices, useProfileOf } from "../services";
+import {
+  useAppServices,
+  useProfileOf,
+  useRelayStatuses,
+  useWebSocketStatuses,
+} from "../services";
 import {
   resetDevice,
+  saveOwnServers,
   saveSetting,
   saveShop,
   useAppEvolu,
   useHoldsShopFunds,
+  useOwnServers,
   useStoredMembership,
 } from "../storage";
 import type { ShopProfile } from "../storage";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { BackupPhrase } from "./BackupPhrase";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { ServersSection } from "./ServersSection";
 import { ShopFields } from "./ShopFields";
 import { useShopForm } from "./shopForm";
 
@@ -128,6 +137,8 @@ export function SettingsScreen({ profile }: { profile: ShopProfile }) {
           )}
         </Card>
       </Section>
+      <NostrRelaysSection />
+      <EvoluServersSection />
       <Section title={t("settingsAbout")}>
         <Card paddingVertical="$sm" gap="$none">
           <ListRow
@@ -178,6 +189,48 @@ export function SettingsScreen({ profile }: { profile: ShopProfile }) {
         onConfirm={() => void resetDevice(evolu)}
       />
     </Screen>
+  );
+}
+
+/** The relays apply after a reload, because the Nostr runtime is built once per launch. */
+function NostrRelaysSection() {
+  const { t } = useI18n();
+  const evolu = useAppEvolu();
+  const { nostr } = useAppServices();
+  return (
+    <ServersSection
+      testID="settings-nostr-relays"
+      title={t("settingsNostrRelays")}
+      addLabel={t("nostrRelayAdd")}
+      addHint={t("nostrRelayAddHint")}
+      defaults={appConfig.nostrRelays}
+      own={useOwnServers("nostrRelays")}
+      statuses={useRelayStatuses(nostr)}
+      onSave={async (own) => {
+        await saveOwnServers(evolu, "nostrRelays", own);
+        reloadAt("settings");
+      }}
+    />
+  );
+}
+
+function EvoluServersSection() {
+  const { t } = useI18n();
+  const evolu = useAppEvolu();
+  const own = useOwnServers("evoluServers");
+  const urls = useMemo(() => [...appConfig.evoluServerUrls, ...own], [own]);
+  return (
+    <ServersSection
+      testID="settings-evolu-servers"
+      title={t("settingsEvoluServers")}
+      addLabel={t("evoluServerAdd")}
+      defaults={appConfig.evoluServerUrls}
+      own={own}
+      statuses={useWebSocketStatuses(urls)}
+      onSave={(next) =>
+        saveOwnServers(evolu, "evoluServers", next).then(() => undefined)
+      }
+    />
   );
 }
 
