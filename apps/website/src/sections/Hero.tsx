@@ -47,6 +47,7 @@ export function Hero() {
     >
       <Stack
         flex={wide ? 1 : undefined}
+        width="100%"
         gap="$xxl"
         transition="slow"
         enterStyle={{ opacity: 0, y: 24 }}

@@ -16,13 +16,14 @@ import {
   buildCashuRequest,
   czkToSats,
   matchIncomingCashu,
+  matchRepeatedCashu,
   minimumBitcoinSats,
   readIncomingCashu,
   uniqueRequestSats,
   wholeCzkFor,
 } from "@platitprosim/core";
 import type { CzkAmount, IncomingCashu } from "@platitprosim/core";
-import { Effect, Either, Exit, Scope } from "effect";
+import { Effect, Either, ExecutionStrategy, Exit, Scope } from "effect";
 import {
   attachBitcoinRequest,
   bitcoinRequestOf,
@@ -34,11 +35,12 @@ import {
   loadPayments,
   loadPaymentWithQuote,
   openBitcoinPayments,
+  paidBitcoinPayments,
   recordReceipt,
 } from "../storage";
 import type { AppEvolu, Payment } from "../storage";
 import type { InboxHandler, Nostr } from "./nostr";
-import { serialQueue } from "./serial";
+import { exclusive, serialQueue } from "./serial";
 import type { Wallet } from "./wallet";
 import { isTransientReceiveError } from "./wallet";
 
@@ -52,7 +54,8 @@ export type BitcoinRequestFailure =
 
 /**
  * Takes Bitcoin payments on this device: a Lightning quote and a Cashu
- * request per payment, settled by whichever the customer pays first.
+ * request per payment, settled by whichever the customer pays first. Sats
+ * that arrive for a payment already paid are recorded as a receipt.
  */
 export interface BitcoinPayments {
   /**
@@ -86,17 +89,44 @@ export const createBitcoinPayments = ({
   // Topup polling runs in this scope; closing it stops every poll, and the
   // persisted quotes resume in the next scope.
   let scope = Effect.runSync(Scope.make());
+  // A new quote polls in a scope of its own, closed once Cashu pays its payment.
+  const quoteScopes = new Map<string, Scope.CloseableScope>();
   const serially = serialQueue("bitcoin payments");
+  // Settling one leg reads what the other one wrote.
+  const settling = exclusive();
+
+  const stopWatching = async (quoteId: string | null) => {
+    const quoteScope = quoteId === null ? undefined : quoteScopes.get(quoteId);
+    if (quoteId === null || quoteScope === undefined) return;
+    quoteScopes.delete(quoteId);
+    await Effect.runPromise(Scope.close(quoteScope, Exit.void));
+  };
+
+  /** Pays the quote's payment, or records the minted sats when another leg paid it first or no payment asks for them. */
+  const recordMinted = async (minted: TopupReceipt) => {
+    const payment = await loadPaymentWithQuote(evolu, minted.quoteId);
+    if (payment && (await completePayment(evolu, payment, "lightning"))) {
+      return;
+    }
+    // This quote paid it in an earlier session.
+    if (payment?.status === "paid" && payment.method === "lightning") return;
+    await recordReceipt(evolu, {
+      operationId: minted.operationId,
+      kind: "lightning",
+      sats: minted.amount,
+      ...(payment ? { paymentId: payment.id } : {}),
+    });
+  };
 
   const settleTopup = async (
     quote: TopupQuote,
     outcome: Either.Either<TopupReceipt, TopupError>,
   ) => {
-    const payment = await loadPaymentWithQuote(evolu, quote.quoteId);
     if (Either.isRight(outcome)) {
-      if (payment) await completePayment(evolu, payment, "lightning");
+      await settling(() => recordMinted(outcome.right));
       return;
     }
+    const payment = await loadPaymentWithQuote(evolu, quote.quoteId);
     switch (outcome.left._tag) {
       case "QuoteExpired":
         if (payment?.status === "pending") {
@@ -124,6 +154,7 @@ export const createBitcoinPayments = ({
   const resume = () =>
     serially(async () => {
       await Effect.runPromise(Scope.close(scope, Exit.void));
+      quoteScopes.clear();
       scope = Effect.runSync(Scope.make());
       const handles = await runtime.runPromise(
         Scope.extend(
@@ -175,6 +206,9 @@ export const createBitcoinPayments = ({
         priced,
         openBitcoinPayments(await loadPayments(evolu)),
       );
+      const quoteScope = Effect.runSync(
+        Scope.fork(scope, ExecutionStrategy.sequential),
+      );
       const topup = await runtime.runPromise(
         Effect.either(
           Scope.extend(
@@ -188,12 +222,16 @@ export const createBitcoinPayments = ({
                 { lockingKey },
               ),
             ),
-            scope,
+            quoteScope,
           ),
         ),
       );
-      if (Either.isLeft(topup)) return topup;
+      if (Either.isLeft(topup)) {
+        await Effect.runPromise(Scope.close(quoteScope, Exit.void));
+        return topup;
+      }
       const { quote } = topup.right;
+      quoteScopes.set(quote.quoteId, quoteScope);
       await attachBitcoinRequest(evolu, payment.id, {
         sats,
         czkPerBtc: rate,
@@ -221,8 +259,9 @@ export const createBitcoinPayments = ({
 
   /**
    * Receives a token and records what it put into the wallet: it pays the
-   * payment it matches, also a cancelled one, and one that matches none is
-   * kept as an unassigned receipt.
+   * payment it matches, also a cancelled one, a token for a paid payment
+   * is recorded as paying it again, and one that matches none is kept as an
+   * unassigned receipt.
    */
   const receiveChatToken: InboxHandler = async (event) => {
     if (event._tag !== "ChatMessageReceived" || event.editOf !== null) return;
@@ -237,23 +276,25 @@ export const createBitcoinPayments = ({
     const received = await unrecordedReceiveOf(text, incoming);
     if (received === null) return;
     const { operationId, sats } = received;
-    const paidBefore = await loadPaymentPaidBy(evolu, operationId);
-    const paid =
-      paidBefore ??
-      matchIncomingCashu(
-        incoming,
-        openBitcoinPayments(await loadPayments(evolu)),
-      )?.payment ??
-      null;
-    // The payment first: a recorded receipt marks the token handled.
-    if (paid && !paidBefore) {
-      await completePayment(evolu, paid, { cashuReceiveId: operationId });
-    }
-    await recordReceipt(evolu, {
-      operationId,
-      kind: "cashu",
-      sats,
-      ...(paid ? { paymentId: paid.id } : {}),
+    await settling(async () => {
+      const payments = await loadPayments(evolu);
+      const paidBefore = await loadPaymentPaidBy(evolu, operationId);
+      const paid =
+        paidBefore ??
+        matchIncomingCashu(incoming, openBitcoinPayments(payments))?.payment ??
+        matchRepeatedCashu(incoming, paidBitcoinPayments(payments))?.payment ??
+        null;
+      // The payment first: a recorded receipt marks the token handled.
+      if (paid && paid.status !== "paid") {
+        await completePayment(evolu, paid, { cashuReceiveId: operationId });
+        await stopWatching(paid.quoteId);
+      }
+      await recordReceipt(evolu, {
+        operationId,
+        kind: "cashu",
+        sats,
+        ...(paid ? { paymentId: paid.id } : {}),
+      });
     });
   };
 

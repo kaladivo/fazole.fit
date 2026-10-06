@@ -170,7 +170,8 @@ export function Button({
           bold
           color={colors.color}
           textAlign="center"
-          numberOfLines={1}
+          flexShrink={1}
+          numberOfLines={2}
         >
           {children}
         </Text>

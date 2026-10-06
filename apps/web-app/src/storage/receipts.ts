@@ -7,7 +7,8 @@ import { decodeRows } from "./rows";
 import { receiptIdFor } from "./schema";
 import type { EmployeeId, PaymentRowId, ReceiptId } from "./schema";
 
-export const ReceiptKind = Schema.Literal("cashu", "forward");
+/** `lightning`: a minted quote whose payment another leg had already paid. */
+export const ReceiptKind = Schema.Literal("cashu", "forward", "lightning");
 export type ReceiptKind = typeof ReceiptKind.Type;
 
 const ReceiptFields = Schema.Struct({

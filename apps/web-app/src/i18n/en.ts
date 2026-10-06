@@ -95,6 +95,8 @@ export const en: Record<keyof typeof cs, string> = {
   paymentNew: "New payment",
   paymentNotFound: "Payment not found",
   paymentNotFoundDescription: "It may not have synced to this device yet.",
+  paymentPaidTwice: "Paid twice",
+  paymentPaidTwiceDetail: "Also received {sats} sat over {method}.",
   paymentClosed: "This payment is no longer open.",
   backToTerminal: "Back to the terminal",
 
@@ -121,7 +123,7 @@ export const en: Record<keyof typeof cs, string> = {
   employeesAdd: "Add employee",
 
   walletBalance: "Balance",
-  walletWithdraw: "Withdraw over Lightning",
+  walletWithdraw: "Withdraw",
   walletSendToLinky: "Send to Linky",
 
   settingsLanguage: "Language",
@@ -181,6 +183,7 @@ export const en: Record<keyof typeof cs, string> = {
   activityRow: "{date} · {label}",
   activityRowFee: "{row} · fee {fee} sat",
   receiptUnassigned: "Unassigned receipt",
+  receiptPaidAgain: "Paid a second time ({method})",
   receiptForwarded: "Forwarded by {name}",
   receiptForwardedDevice: "Forwarded by an employee device",
   withdrawalLightning: "Lightning withdrawal",
@@ -216,7 +219,11 @@ export const en: Record<keyof typeof cs, string> = {
   linkyScannerUnavailable: "No camera available. Paste the npub instead.",
   linkySent: "Sent to Linky",
   linkySentDetail: "{sats} sat will arrive in the Linky chat.",
-  paymentCopy: "Tap to copy the payment link",
+  paymentEnlarge: "Tap to enlarge the QR code",
+  paymentCopyLink: "Copy link",
+  paymentQrKind: "QR code type",
+  paymentQrCombined: "Lightning and Cashu",
+  paymentQrLightning: "Lightning only",
   paymentCopied: "Payment link copied",
   withdrawInvoiceHint: "An invoice for {sats} sat",
 

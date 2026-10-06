@@ -70,7 +70,6 @@ export function TabBar<T extends string>({
       role="tablist"
       aria-label={accessibilityLabel}
       gap="$none"
-      paddingHorizontal="$xs"
       paddingTop="$xs"
       paddingBottom="$sm"
       borderTopWidth={border.hairline}

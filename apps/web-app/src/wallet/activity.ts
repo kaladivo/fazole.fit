@@ -1,4 +1,5 @@
 import type { Payment, Receipt, Withdrawal } from "../storage";
+import { receiptIdFor } from "../storage/schema";
 
 /** One line of wallet activity: the sats that reached or left the wallet, and the fee among them. */
 export type WalletActivity =
@@ -18,6 +19,8 @@ export type WalletActivity =
       /** What the payment asked beyond what arrived; 0 without a payment. */
       readonly feeSats: number;
       readonly receipt: Receipt;
+      /** The customer paid its payment twice: another leg or token had paid it. */
+      readonly paidAgain: boolean;
     }
   | {
       readonly kind: "withdrawal";
@@ -31,9 +34,9 @@ export type WalletActivity =
 
 /**
  * What moved through this wallet, newest first: this device's paid Lightning
- * payments (the minted sats), every Cashu receipt (a customer's token,
- * assigned or not, and employees' forwards, net of fees) and withdrawals
- * with their fees. Bank payments never touch the wallet, and an employee's
+ * payments (the minted sats), every receipt (a customer's token, assigned or
+ * not, employees' forwards, net of fees, and Lightning that paid an already
+ * paid payment) and withdrawals with their fees. Bank payments never touch the wallet, and an employee's
  * payment reaches it as a forward.
  */
 export const walletActivity = (
@@ -42,8 +45,8 @@ export const walletActivity = (
   withdrawals: readonly Withdrawal[],
   limit = 30,
 ): WalletActivity[] => {
-  const askedSats = new Map<string, number | null>(
-    payments.map(({ id, sats }) => [id, sats]),
+  const byId = new Map<string, Payment>(
+    payments.map((payment) => [payment.id, payment]),
   );
   return [
     ...payments.flatMap((payment): WalletActivity[] =>
@@ -63,8 +66,9 @@ export const walletActivity = (
         : [],
     ),
     ...receipts.map((receipt): WalletActivity => {
-      const asked =
-        receipt.paymentId === null ? null : askedSats.get(receipt.paymentId);
+      const payment =
+        receipt.paymentId === null ? undefined : byId.get(receipt.paymentId);
+      const asked = payment?.sats;
       return {
         kind: "receipt",
         id: receipt.id,
@@ -72,6 +76,7 @@ export const walletActivity = (
         sats: receipt.sats,
         feeSats: asked ? Math.max(0, asked - receipt.sats) : 0,
         receipt,
+        paidAgain: payment !== undefined && !settled(payment, receipt),
       };
     }),
     ...withdrawals.map((withdrawal): WalletActivity => {
@@ -90,6 +95,21 @@ export const walletActivity = (
     .sort((a, b) => b.atMs - a.atMs)
     .slice(0, limit);
 };
+
+/** Whether the receipt is the one that paid `payment`, not a second payment of it. */
+const settled = (payment: Payment, receipt: Receipt) =>
+  receipt.kind === "cashu" &&
+  payment.cashuReceiveId !== null &&
+  receiptIdFor(payment.cashuReceiveId) === receipt.id;
+
+/** The receipts by which a customer paid `payment` a second time. */
+export const paidAgainReceipts = (
+  payment: Payment,
+  receipts: readonly Receipt[],
+): Receipt[] =>
+  receipts.filter(
+    (receipt) => receipt.paymentId === payment.id && !settled(payment, receipt),
+  );
 
 /** The sats an activity line added to the balance; negative for a withdrawal. */
 export const balanceChange = (item: WalletActivity): number =>

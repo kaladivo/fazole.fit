@@ -118,11 +118,29 @@ const sameMint = (a: string, b: string) =>
 export const matchIncomingCashu = <P extends OpenBitcoinPayment>(
   incoming: IncomingCashu,
   payments: readonly P[],
+): P | null =>
+  matchAmong(
+    incoming,
+    payments.filter((payment) => payment.status !== "paid"),
+  );
+
+/** The paid payment a further token pays again, matched the same way: the customer paid it twice. */
+export const matchRepeatedCashu = <P extends OpenBitcoinPayment>(
+  incoming: IncomingCashu,
+  payments: readonly P[],
+): P | null =>
+  matchAmong(
+    incoming,
+    payments.filter((payment) => payment.status === "paid"),
+  );
+
+const matchAmong = <P extends OpenBitcoinPayment>(
+  incoming: IncomingCashu,
+  payments: readonly P[],
 ): P | null => {
   if (incoming.unit !== null && incoming.unit !== "sat") return null;
-  const atMint = payments.filter(
-    (payment) =>
-      payment.status !== "paid" && sameMint(payment.mintUrl, incoming.mint),
+  const atMint = payments.filter((payment) =>
+    sameMint(payment.mintUrl, incoming.mint),
   );
   if (incoming.requestId !== null) {
     return (

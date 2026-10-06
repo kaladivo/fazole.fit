@@ -30,8 +30,10 @@ import {
   completePayment,
   useAppEvolu,
   usePayment,
+  useReceipts,
 } from "../storage";
 import type { Payment, ShopProfile } from "../storage";
+import { paidAgainReceipts } from "../wallet/activity";
 import { DetailRows } from "./DetailRows";
 import { methodLabels, statusLabels } from "./paymentLabels";
 
@@ -94,6 +96,7 @@ function OpenPayment({
   const [openedPaid] = useState(payment.status === "paid");
   const amount = formatCzkValue(payment.amountCzk, lang);
   const open = payment.status === "pending";
+  const paidAgain = paidAgainReceipts(payment, useReceipts());
 
   const cancel = async () => {
     await cancelPayment(evolu, payment);
@@ -102,21 +105,25 @@ function OpenPayment({
 
   return (
     <Screen width="narrow" testID="payment-screen">
-      <SegmentedControl
-        accessibilityLabel={t("paymentMethod")}
-        size="lg"
-        value={leg}
-        onValueChange={setLeg}
-        options={[
-          { value: "bank", label: t("methodBank"), icon: "Landmark" },
-          { value: "bitcoin", label: t("methodBitcoin"), icon: "Bitcoin" },
-        ]}
-      />
-      {leg === "bank" ? (
-        <BankLeg payment={payment} profile={profile} />
-      ) : (
-        <BitcoinLeg payment={payment} profile={profile} />
-      )}
+      {open ? (
+        <>
+          <SegmentedControl
+            accessibilityLabel={t("paymentMethod")}
+            size="lg"
+            value={leg}
+            onValueChange={setLeg}
+            options={[
+              { value: "bank", label: t("methodBank"), icon: "Landmark" },
+              { value: "bitcoin", label: t("methodBitcoin"), icon: "Bitcoin" },
+            ]}
+          />
+          {leg === "bank" ? (
+            <BankLeg payment={payment} profile={profile} />
+          ) : (
+            <BitcoinLeg payment={payment} profile={profile} />
+          )}
+        </>
+      ) : null}
       {open ? (
         <Stack gap="$sm">
           {leg === "bank" ? (
@@ -143,6 +150,21 @@ function OpenPayment({
             status={payment.status}
             label={t(statusLabels[payment.status])}
           />
+          {paidAgain.map((receipt) => (
+            <Notice
+              key={receipt.id}
+              tone="warning"
+              title={t("paymentPaidTwice")}
+              description={t("paymentPaidTwiceDetail", {
+                sats: formatWhole(receipt.sats, lang),
+                method: t(
+                  receipt.kind === "lightning"
+                    ? "methodLightning"
+                    : "methodCashu",
+                ),
+              })}
+            />
+          ))}
           <Notice title={t("paymentClosed")} />
           <Button variant="secondary" onPress={toTerminal}>
             {t("backToTerminal")}
@@ -184,6 +206,8 @@ function BankLeg({
           accessibilityLabel={t("paymentBankQr", {
             amount: t("amountCzk", { amount }),
           })}
+          tooltip={t("paymentEnlarge")}
+          enlarge={{ closeLabel: t("close") }}
           value={buildSpd({
             iban: profile.iban,
             amount: payment.amountCzk,
@@ -266,6 +290,7 @@ function BitcoinLeg({
   const { failure, retry } = useBitcoinRequest(payment, profile);
   const request = bitcoinRequestOf(payment);
   const [copied, setCopied] = useState(false);
+  const [lightningOnly, setLightningOnly] = useState(false);
   useEffect(() => {
     if (!copied) return;
     const timer = setTimeout(() => setCopied(false), COPIED_MS);
@@ -312,23 +337,38 @@ function BitcoinLeg({
   const sats = formatWhole(request.sats, lang);
   const uri = buildBitcoinPaymentUri(request.invoice, request.paymentRequest);
   const copy = async () => {
-    await navigator.clipboard.writeText(uri);
+    await navigator.clipboard.writeText(lightningOnly ? request.invoice : uri);
     setCopied(true);
   };
+  const status = copied ? (
+    <Pill label={t("paymentCopied")} tone="success" icon="Check" />
+  ) : payment.status === "pending" ? (
+    <Pill label={t("paymentWaiting")} tone="accent" busy />
+  ) : null;
   return (
     <>
+      {/* No logo: a logo needs the highest error correction, and this payload is already dense. */}
+      <QRCode
+        testID="payment-bitcoin-qr"
+        size="lg"
+        accessibilityLabel={t("paymentBitcoinQr", {
+          amount: t("amountCzk", { amount }),
+        })}
+        tooltip={t("paymentEnlarge")}
+        enlarge={{ closeLabel: t("close") }}
+        // Uppercase fits QR's alphanumeric mode, a much coarser code for weak cameras.
+        value={lightningOnly ? request.invoice.toUpperCase() : uri}
+      />
+      <SegmentedControl
+        accessibilityLabel={t("paymentQrKind")}
+        value={lightningOnly ? "lightning" : "combined"}
+        onValueChange={(kind) => setLightningOnly(kind === "lightning")}
+        options={[
+          { value: "combined", label: t("paymentQrCombined") },
+          { value: "lightning", label: t("paymentQrLightning") },
+        ]}
+      />
       <Stack alignItems="center" gap="$lg">
-        {/* No logo: a logo needs the highest error correction, and this payload is already dense. */}
-        <QRCode
-          testID="payment-bitcoin-qr"
-          size="lg"
-          accessibilityLabel={t("paymentBitcoinQr", {
-            amount: t("amountCzk", { amount }),
-          })}
-          tooltip={t("paymentCopy")}
-          onPress={() => void copy()}
-          value={uri}
-        />
         <AmountDisplay
           testID="payment-bitcoin-amount"
           value={amount}
@@ -336,15 +376,23 @@ function BitcoinLeg({
           secondary={t("amountSats", { sats })}
           size="md"
         />
-        {copied ? (
-          <Row justifyContent="center">
-            <Pill label={t("paymentCopied")} tone="success" icon="Check" />
-          </Row>
-        ) : payment.status === "pending" ? (
-          <Row justifyContent="center">
-            <Pill label={t("paymentWaiting")} tone="accent" busy />
-          </Row>
-        ) : null}
+        <Row
+          justifyContent="center"
+          alignItems="center"
+          flexWrap="wrap"
+          gap="$sm"
+        >
+          {status}
+          <Button
+            testID="payment-copy"
+            size="sm"
+            variant="ghost"
+            icon="Copy"
+            onPress={() => void copy()}
+          >
+            {t("paymentCopyLink")}
+          </Button>
+        </Row>
       </Stack>
       <Card gap="$sm" paddingVertical="$lg">
         <DetailRows

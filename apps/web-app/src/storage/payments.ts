@@ -6,6 +6,7 @@ import {
   CzkAmount,
   generateVariableSymbol,
   isOpenBitcoinRequest,
+  OPEN_REQUEST_MS,
   PaymentId,
   PaymentMethod,
   PaymentStatus,
@@ -215,19 +216,36 @@ export const paymentMintOf = (payment: Payment): string | null =>
     ? null
     : cashuRequestMint(payment.paymentRequest);
 
+const bitcoinRequestsWhere = (
+  payments: readonly Payment[],
+  isCandidate: (payment: Payment) => boolean,
+) =>
+  payments.flatMap((payment): OpenPayment[] => {
+    const mintUrl = paymentMintOf(payment);
+    return payment.sats === null || !mintUrl || !isCandidate(payment)
+      ? []
+      : [{ ...payment, mintUrl, sats: payment.sats, payment }];
+  });
+
 /** This device's recent unpaid Bitcoin requests, also cancelled ones: a token can still pay each. */
 export const openBitcoinPayments = (
   payments: readonly Payment[],
   now = Date.now(),
 ) =>
-  payments.flatMap((payment): OpenPayment[] => {
-    const mintUrl = paymentMintOf(payment);
-    return payment.sats === null ||
-      !mintUrl ||
-      !isOpenBitcoinRequest(payment, now)
-      ? []
-      : [{ ...payment, mintUrl, sats: payment.sats, payment }];
-  });
+  bitcoinRequestsWhere(payments, (payment) =>
+    isOpenBitcoinRequest(payment, now),
+  );
+
+/** This device's recent paid Bitcoin requests, which a customer may pay a second time. */
+export const paidBitcoinPayments = (
+  payments: readonly Payment[],
+  now = Date.now(),
+) =>
+  bitcoinRequestsWhere(
+    payments,
+    (payment) =>
+      payment.status === "paid" && now - payment.createdAtMs < OPEN_REQUEST_MS,
+  );
 
 /** Marks the payment paid when its status still allows it; a Cashu payment names the receive that paid it. */
 export const completePayment = async (

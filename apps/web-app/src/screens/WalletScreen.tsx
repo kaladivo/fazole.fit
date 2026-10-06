@@ -135,15 +135,24 @@ const activityLabel = (
       return t(methodLabels.lightning);
     case "receipt": {
       const { receipt } = item;
-      if (receipt.kind === "cashu") {
-        return t(
-          receipt.paymentId === null ? "receiptUnassigned" : methodLabels.cashu,
-        );
+      if (receipt.kind === "forward") {
+        const name = employees.find(
+          ({ id }) => id === receipt.employeeId,
+        )?.name;
+        return name
+          ? t("receiptForwarded", { name })
+          : t("receiptForwardedDevice");
       }
-      const name = employees.find(({ id }) => id === receipt.employeeId)?.name;
-      return name
-        ? t("receiptForwarded", { name })
-        : t("receiptForwardedDevice");
+      if (item.paidAgain) {
+        return t("receiptPaidAgain", {
+          method: t(methodLabels[receipt.kind]),
+        });
+      }
+      return t(
+        receipt.paymentId === null
+          ? "receiptUnassigned"
+          : methodLabels[receipt.kind],
+      );
     }
     case "withdrawal":
       return t(
@@ -160,7 +169,7 @@ const activityIcon = (item: WalletActivity) =>
     : item.kind === "receipt"
       ? item.receipt.kind === "forward"
         ? "Users"
-        : methodIcons.cashu
+        : methodIcons[item.receipt.kind]
       : item.withdrawal.kind === "lightning"
         ? "Zap"
         : "Send";

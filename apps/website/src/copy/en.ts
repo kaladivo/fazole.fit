@@ -6,6 +6,10 @@ export const en: SiteCopy = {
     title: "Platit prosím – QR payments with no commission",
     description:
       "A payment terminal on your phone. Customers pay by bank transfer via a QR code or with Bitcoin. No commission, no server, your data stays on your devices.",
+    socialDescription:
+      "Your phone as a payment terminal. By bank transfer via a QR code or with Bitcoin, with no commission and no server.",
+    imageAlt: "Platit prosím: a phone with a payment terminal and a QR code",
+    ogLocale: "en_US",
   },
   nav: {
     home: "Platit prosím, home",
@@ -22,7 +26,8 @@ export const en: SiteCopy = {
   hero: {
     eyebrow: "A payment terminal on your phone",
     titleBefore: "Accept payments ",
-    titleAccent: "with no\u00a0commission",
+    // Soft hyphens let the long word break on 320 px phones.
+    titleAccent: "with no com\u00admis\u00adsion",
     titleAfter: "",
     subtitle:
       "Customers scan a QR code and pay by bank transfer, or with Bitcoin over Lightning or Cashu. Your phone is the terminal. No server, no account: your data stays on your devices.",
@@ -314,7 +319,7 @@ export const en: SiteCopy = {
       "An employee logs in with Linky on their device, and it links by itself.",
     balance: "Balance",
     balanceCzk: (amount: string) => `≈ ${amount} CZK`,
-    withdraw: "Withdraw over Lightning",
+    withdraw: "Withdraw",
     sendToLinky: "Send to Linky",
     activity: "Activity",
     activityIn: (sats: string) => `+${sats} sat`,

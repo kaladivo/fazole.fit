@@ -25,6 +25,10 @@ export const cs = {
     title: "Platit prosím – platby QR kódem bez provizí",
     description:
       "Platební terminál v telefonu. Zákazník zaplatí převodem přes QR kód nebo bitcoinem. Bez provizí, bez serveru, data zůstávají ve vašich zařízeních.",
+    socialDescription:
+      "Telefon jako platební terminál. Převodem přes QR kód nebo bitcoinem, bez provizí a bez serveru.",
+    imageAlt: "Platit prosím: telefon s platebním terminálem a QR kódem",
+    ogLocale: "cs_CZ",
   },
   nav: {
     home: "Platit prosím, úvod",
@@ -74,7 +78,7 @@ export const cs = {
     bank: {
       title: "Banka",
       pill: "Potvrzujete vy",
-      body: "QR platba ve formátu SPD, kterou umí všechny české banky. Peníze jdou rovnou na váš účet. Jakmile je uvidíte, klepněte na Označit jako zaplacené.",
+      body: "QR platba ve formátu SPD, kterou umí všechny české banky. Peníze jdou rovnou na váš účet. Jakmile je uvidíte, klepněte na Zaplaceno.",
     },
     bitcoin: {
       title: "Bitcoin",
@@ -224,7 +228,7 @@ export const cs = {
       {
         question: "Jak poznám, že platba z banky dorazila?",
         answer:
-          "Ověříte si ji ve své bance, třeba podle notifikace. Každá platba má vlastní variabilní symbol, takže ji snadno najdete. Pak klepnete na Označit jako zaplacené.",
+          "Ověříte si ji ve své bance, třeba podle notifikace. Každá platba má vlastní variabilní symbol, takže ji snadno najdete. Pak klepnete na Zaplaceno.",
       },
       {
         question: "Co když ztratím telefon?",
@@ -286,7 +290,7 @@ export const cs = {
     variableSymbol: "Variabilní symbol",
     account: "Účet",
     recipient: "Příjemce",
-    markPaid: "Označit jako zaplacené",
+    markPaid: "Zaplaceno",
     cancelPayment: "Zrušit platbu",
     inBitcoin: "V bitcoinu",
     rate: "Kurz",
@@ -360,7 +364,7 @@ export const cs = {
     languageCs: "Čeština",
     languageEn: "English",
     theme: "Vzhled",
-    themeSystem: "Podle systému",
+    themeSystem: "Systém",
     themeLight: "Světlý",
     themeDark: "Tmavý",
     shop: "Obchod",

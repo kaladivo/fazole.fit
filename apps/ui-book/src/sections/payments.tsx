@@ -57,6 +57,17 @@ export const payments: Section = {
             BIP-321 with the brand, pressable
           </UI.Text>
         </UI.Stack>
+        <UI.Stack alignItems="center" gap="$sm">
+          <UI.QRCode
+            value={bip321Payload}
+            accessibilityLabel="Bitcoin payment QR code"
+            enlarge={{ closeLabel: "Close" }}
+            tooltip="Tap to enlarge"
+          />
+          <UI.Text variant="caption" muted>
+            Tap to enlarge full screen
+          </UI.Text>
+        </UI.Stack>
       </UI.Row>
     ),
     ScannerFrame: () => {

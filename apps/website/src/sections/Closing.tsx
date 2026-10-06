@@ -87,9 +87,9 @@ export function SiteFooter() {
       borderTopWidth={border.hairline}
       borderColor="$borderColor"
     >
-      <Row gap="$sm">
+      <Row gap="$sm" flexShrink={1}>
         <BrandMark size="iconLg" />
-        <Text variant="label" muted>
+        <Text variant="label" muted flexShrink={1}>
           {copy.footer.tagline}
         </Text>
       </Row>

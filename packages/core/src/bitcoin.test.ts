@@ -12,6 +12,7 @@ import {
   cashuRequestMint,
   isOpenBitcoinRequest,
   matchIncomingCashu,
+  matchRepeatedCashu,
   minimumBitcoinSats,
   OPEN_REQUEST_MS,
   readIncomingCashu,
@@ -147,6 +148,20 @@ describe("matchIncomingCashu", () => {
     expect(matchIncomingCashu(token(100, { unit: null }), payments)?.id).toBe(
       "p1",
     );
+  });
+});
+
+describe("matchRepeatedCashu", () => {
+  it("matches a further token only to a paid request", () => {
+    const payments = [
+      payment("paid", 100, { status: "paid" }),
+      payment("open", 120),
+    ];
+    expect(matchRepeatedCashu(token(100), payments)?.id).toBe("paid");
+    expect(
+      matchRepeatedCashu(token(100, { requestId: "paid" }), payments)?.id,
+    ).toBe("paid");
+    expect(matchRepeatedCashu(token(120), payments)).toBeNull();
   });
 });
 

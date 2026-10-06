@@ -220,7 +220,7 @@ describe.runIf(mintAnswers)("the owner's wallet at the local mint", () => {
         nostr: fake.nostr,
         wallet,
       });
-      const customer = await customerWallet(4_000);
+      const customer = await customerWallet(6_000);
       const [deliverChat] = fake.inbox;
       const [deliverAppMessage] = fake.appMessages;
       if (!deliverChat || !deliverAppMessage) throw new Error("no handlers");
@@ -271,6 +271,45 @@ describe.runIf(mintAnswers)("the owner's wallet at the local mint", () => {
 
       // A token that pays no request is kept as an unassigned receipt.
       await deliverChat(tokenMessage(await customer.token(77)), "live");
+
+      // Paid twice: Cashu first, then the same QR's Lightning invoice.
+      const cashuFirst = await bitcoinPayment(600);
+      await deliverChat(
+        tokenMessage(await customer.token(cashuFirst.sats)),
+        "live",
+      );
+      expect(await statusOf(cashuFirst.id)).toBe("paid");
+      await customer.pay(cashuFirst.invoice);
+      // The Cashu payment stopped polling the quote; a resume, as after a reload, mints it.
+      payments.start();
+      const receiptsFor = async (id: string) =>
+        (await loadReceipts(evolu)).filter(
+          (receipt) => receipt.paymentId === id,
+        );
+      await expect
+        .poll(async () => (await receiptsFor(cashuFirst.id)).length, {
+          timeout: 30_000,
+        })
+        .toBe(2);
+      expect(
+        (await receiptsFor(cashuFirst.id)).find(
+          (receipt) => receipt.kind === "lightning",
+        )?.sats,
+      ).toBe(cashuFirst.sats);
+
+      // And Lightning first, then a token for the same payment.
+      const lightningFirst = await bitcoinPayment(700);
+      await customer.pay(lightningFirst.invoice);
+      await expect
+        .poll(() => statusOf(lightningFirst.id), { timeout: 30_000 })
+        .toBe("paid");
+      await deliverChat(
+        tokenMessage(await customer.token(lightningFirst.sats)),
+        "live",
+      );
+      expect(
+        (await receiptsFor(lightningFirst.id)).map(({ kind }) => kind),
+      ).toEqual(["cashu"]);
 
       // An employee device forwards what it took, locked to the owner.
       const employee = createTestEvolu();
@@ -327,6 +366,10 @@ describe.runIf(mintAnswers)("the owner's wallet at the local mint", () => {
         Infinity,
       );
       expect(activity.some((item) => item.feeSats > 0)).toBe(true);
+      expect(
+        activity.filter((item) => item.kind === "receipt" && item.paidAgain)
+          .length,
+      ).toBe(2);
       expect(
         activity.some(
           (item) => item.kind === "receipt" && item.receipt.paymentId === null,

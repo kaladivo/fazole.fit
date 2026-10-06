@@ -57,7 +57,7 @@ describe("the live terminal", () => {
     await press(container, "Požadovat platbu");
     expect(container.textContent).toContain("123456789/0000");
     expect(container.textContent).toContain("Čeká");
-    await press(container, "Označit jako zaplacené");
+    await press(container, "Zaplaceno");
     expect(container.querySelector('[role="status"]')?.textContent).toContain(
       "Banka · ",
     );

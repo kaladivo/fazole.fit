@@ -1,13 +1,22 @@
 import { useState } from "react";
 import QRCodeSvg from "react-native-qrcode-svg";
-import { getVariableValue, Portal, useTheme, View } from "tamagui";
+import {
+  Dialog as TamaguiDialog,
+  getVariableValue,
+  Portal,
+  Theme,
+  useTheme,
+  View,
+  VisuallyHidden,
+} from "tamagui";
 import { BrandMark } from "./brand-mark";
-import { Button, Pressable } from "./controls";
+import { Button, IconButton, Pressable } from "./controls";
 import type { LabeledAction } from "./controls";
 import { AmountDisplay } from "./display";
 import { Icon } from "./icons";
 import type { IconName } from "./icons";
 import { Row, Stack, Text } from "./layout";
+import { Modal } from "./overlays";
 import { tooltipProps } from "./styles";
 import {
   border,
@@ -124,11 +133,9 @@ export function Keypad({
   );
 }
 
-export interface QRCodeProps {
+interface QRCodeBaseProps {
   value: string;
   accessibilityLabel: string;
-  /** Makes the code pressable, e.g. to copy its content. */
-  onPress?: (() => void) | undefined;
   /** A logo in a cleared centre: the brand mark or an icon such as "Zap". */
   logo?: "brand" | IconName | undefined;
   /** The largest the code grows: `md` for side content, `lg` for a code the customer scans. */
@@ -137,6 +144,20 @@ export interface QRCodeProps {
   tooltip?: string | undefined;
   testID?: string | undefined;
 }
+
+export type QRCodeProps = QRCodeBaseProps &
+  (
+    | {
+        /** Makes the code pressable, e.g. to copy its content. */
+        onPress?: (() => void) | undefined;
+        enlarge?: undefined;
+      }
+    | {
+        /** Pressing the code shows it full screen on white, closed by the X labelled `closeLabel` or a tap. */
+        enlarge: { readonly closeLabel: string };
+        onPress?: undefined;
+      }
+  );
 
 /** The white frame's padding (the quiet zone) and hairline border on both sides. */
 const qrFrameInset = 2 * (space.lg + border.hairline);
@@ -149,19 +170,21 @@ export function QRCode({
   value,
   accessibilityLabel,
   onPress,
+  enlarge,
   logo,
   size = "md",
   tooltip,
   testID,
 }: QRCodeProps) {
-  const theme = useTheme();
   const [availableWidth, setAvailableWidth] = useState<number>();
+  const [enlarged, setEnlarged] = useState(false);
   const maxSize = size === "lg" ? sizes.qrLg : sizes.qr;
   const codeSize =
     availableWidth === undefined
       ? maxSize
       : Math.max(0, Math.min(maxSize, availableWidth - qrFrameInset));
-  const Frame = onPress ? Pressable : View;
+  const press = enlarge ? () => setEnlarged(true) : onPress;
+  const Frame = press ? Pressable : View;
   return (
     <View
       alignSelf="stretch"
@@ -172,10 +195,10 @@ export function QRCode({
     >
       <Frame
         testID={testID}
-        role={onPress ? "button" : "img"}
+        role={press ? "button" : "img"}
         aria-label={accessibilityLabel}
         {...tooltipProps(tooltip)}
-        onPress={onPress}
+        onPress={press}
         position="relative"
         padding="$lg"
         borderRadius="$card"
@@ -183,48 +206,147 @@ export function QRCode({
         borderWidth={border.hairline}
         borderColor="$borderColor"
         alignSelf="center"
-        {...(onPress ? { pressStyle: { opacity: opacity.dimmed } } : {})}
+        {...(press ? { pressStyle: { opacity: opacity.dimmed } } : {})}
       >
-        <QRCodeSvg
+        <QRSymbol value={value} size={codeSize} logo={logo} />
+      </Frame>
+      {enlarge ? (
+        <QRViewer
+          open={enlarged}
+          onOpenChange={setEnlarged}
           value={value}
-          size={codeSize}
-          color={getVariableValue(theme.qrForeground)}
-          backgroundColor={getVariableValue(theme.qrBackground)}
-          // The logo hides the centre modules and needs the highest level; without one, the lowest level keeps long payloads coarse.
-          ecl={logo ? "H" : "L"}
+          accessibilityLabel={accessibilityLabel}
+          logo={logo}
+          closeLabel={enlarge.closeLabel}
+          testID={testID === undefined ? undefined : `${testID}-enlarged`}
         />
-        {logo ? (
+      ) : null}
+    </View>
+  );
+}
+
+/** The modules and the logo, `size` wide. */
+function QRSymbol({
+  value,
+  size,
+  logo,
+}: {
+  value: string;
+  size: number;
+  logo: QRCodeProps["logo"];
+}) {
+  const theme = useTheme();
+  return (
+    <View position="relative">
+      <QRCodeSvg
+        value={value}
+        size={size}
+        color={getVariableValue(theme.qrForeground)}
+        backgroundColor={getVariableValue(theme.qrBackground)}
+        // The logo hides the centre modules and needs the highest level; without one, the lowest level keeps long payloads coarse.
+        ecl={logo ? "H" : "L"}
+      />
+      {logo ? (
+        <View
+          position="absolute"
+          inset={0}
+          alignItems="center"
+          justifyContent="center"
+          pointerEvents="none"
+        >
           <View
+            padding="$xs"
+            borderRadius="$control"
+            backgroundColor="$qrBackground"
+          >
+            {logo === "brand" ? (
+              <BrandMark size="iconXl" />
+            ) : (
+              <View
+                width="$iconXl"
+                height="$iconXl"
+                borderRadius="$sm"
+                backgroundColor="$qrForeground"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Icon name={logo} color="$qrBackground" />
+              </View>
+            )}
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+/** The code as large as the screen allows, on white; a tap anywhere closes it. */
+function QRViewer({
+  open,
+  onOpenChange,
+  value,
+  accessibilityLabel,
+  logo,
+  closeLabel,
+  testID,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  value: string;
+  accessibilityLabel: string;
+  logo: QRCodeProps["logo"];
+  closeLabel: string;
+  testID: string | undefined;
+}) {
+  const [area, setArea] = useState<{ width: number; height: number }>();
+  const close = () => onOpenChange(false);
+  return (
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      placement="qr"
+      described={false}
+      testID={testID}
+    >
+      {/* Light, so the controls read on the white screen in the dark theme too. */}
+      <Theme name="light">
+        <VisuallyHidden>
+          <TamaguiDialog.Title>{accessibilityLabel}</TamaguiDialog.Title>
+        </VisuallyHidden>
+        <Row justifyContent="flex-end">
+          <IconButton
+            icon="X"
+            accessibilityLabel={closeLabel}
+            onPress={close}
+          />
+        </Row>
+        <View
+          position="relative"
+          flex={1}
+          alignItems="center"
+          justifyContent="center"
+          onLayout={(event) => setArea(event.nativeEvent.layout)}
+        >
+          <Pressable
             position="absolute"
             inset={0}
-            alignItems="center"
-            justifyContent="center"
-            pointerEvents="none"
-          >
-            <View
-              padding="$xs"
-              borderRadius="$control"
-              backgroundColor="$qrBackground"
-            >
-              {logo === "brand" ? (
-                <BrandMark size="iconXl" />
-              ) : (
-                <View
-                  width="$iconXl"
-                  height="$iconXl"
-                  borderRadius="$sm"
-                  backgroundColor="$qrForeground"
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <Icon name={logo} color="$qrBackground" />
-                </View>
-              )}
+            cursor="default"
+            aria-hidden
+            tabIndex={-1}
+            onPress={close}
+          />
+          {area ? (
+            <View pointerEvents="none">
+              <QRSymbol
+                value={value}
+                size={Math.max(0, Math.min(area.width, area.height))}
+                logo={logo}
+              />
             </View>
-          </View>
-        ) : null}
-      </Frame>
-    </View>
+          ) : null}
+        </View>
+      </Theme>
+    </Modal>
   );
 }
 

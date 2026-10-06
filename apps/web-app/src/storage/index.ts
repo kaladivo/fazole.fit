@@ -29,6 +29,7 @@ export {
   needsForward,
   needsReport,
   openBitcoinPayments,
+  paidBitcoinPayments,
   paymentMintOf,
   paymentRecordOf,
   paymentsQuery,

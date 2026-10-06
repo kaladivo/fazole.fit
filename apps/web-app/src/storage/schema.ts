@@ -210,15 +210,15 @@ export const AppSchema = {
     operationId: nullOr(NonEmptyString1000),
     error: nullOr(NonEmptyString1000),
   },
-  /** Cashu this device's wallet received: a customer's token, or an employee device's forward. */
+  /** What this device's wallet received apart from a payment's Lightning leg: a customer's token, an employee device's forward, or a Lightning payment that came after another leg had paid. */
   receipt: {
     id: ReceiptId,
-    // "cashu" | "forward"
+    // "cashu" | "forward" | "lightning"
     kind: NonEmptyString100,
     // What reached the wallet, after the mint's input fee.
     sats: PositiveInt,
     receivedAtMs: PositiveInt,
-    // A customer's token: the payment it paid; null when it matched none.
+    // A customer's token or a late Lightning payment: the payment it paid; null when it matched none.
     paymentId: nullOr(PaymentRowId),
     // Owner, a forward: the employee whose device sent it.
     employeeId: nullOr(EmployeeId),

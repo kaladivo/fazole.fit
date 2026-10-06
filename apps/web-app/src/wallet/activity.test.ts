@@ -5,6 +5,7 @@ import {
   EmployeeId,
   PaymentRowId,
   ReceiptId,
+  receiptIdFor,
   WithdrawalId,
 } from "../storage/schema";
 import { balanceChange, parseSats, walletActivity } from "./activity";
@@ -109,6 +110,28 @@ describe("walletActivity", () => {
     expect(items.reduce((sum, item) => sum + balanceChange(item), 0)).toBe(
       500 + 249 - 101 - 535,
     );
+  });
+
+  it("lists a second payment of a paid payment as paid again, and counts it", () => {
+    const paid = payment("Twice", {
+      method: "cashu",
+      cashuReceiveId: "receive-1",
+    });
+    const items = walletActivity(
+      [paid],
+      [
+        {
+          ...receipt("", { paymentId: paid.id }),
+          id: receiptIdFor("receive-1"),
+        },
+        receipt("Late", { kind: "lightning", sats: 100, paymentId: paid.id }),
+      ],
+      [],
+    );
+    expect(
+      items.map((item) => item.kind === "receipt" && item.paidAgain),
+    ).toEqual([false, true]);
+    expect(items.reduce((sum, item) => sum + balanceChange(item), 0)).toBe(199);
   });
 
   it("keeps only the newest items", () => {

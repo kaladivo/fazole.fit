@@ -39,6 +39,21 @@ const placements = {
       backgroundColor: "$background",
     },
   },
+  /** A white screen for a QR code, in both themes, as bright as the display goes. */
+  qr: {
+    portal: { padding: "$none" },
+    content: {
+      enterStyle: fade,
+      exitStyle: fade,
+      gap: "$none",
+      padding: "$lg",
+      width: "100%",
+      height: "100%",
+      borderWidth: 0,
+      borderRadius: "$none",
+      backgroundColor: "$qrBackground",
+    },
+  },
   bottom: {
     portal: {
       paddingTop: "$huge",
@@ -63,7 +78,7 @@ const placements = {
   },
 } as const;
 
-interface ModalProps {
+export interface ModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   placement: keyof typeof placements;
@@ -73,7 +88,7 @@ interface ModalProps {
 }
 
 /** Tamagui's dialog: focus trap, Escape, Android back and focus return on every placement. */
-function Modal({
+export function Modal({
   open,
   onOpenChange,
   placement,

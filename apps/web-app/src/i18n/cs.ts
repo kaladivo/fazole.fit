@@ -86,7 +86,7 @@ export const cs = {
   paymentVs: "Variabilní symbol",
   paymentAccount: "Účet",
   paymentRecipient: "Příjemce",
-  paymentMarkPaid: "Označit jako zaplacené",
+  paymentMarkPaid: "Zaplaceno",
   paymentCancel: "Zrušit platbu",
   paymentPaidTitle: "Zaplaceno",
   paymentPaidDetail: "{method} · {time}",
@@ -94,6 +94,8 @@ export const cs = {
   paymentNotFound: "Platba nenalezena",
   paymentNotFoundDescription:
     "Možná se ještě nesynchronizovala na toto zařízení.",
+  paymentPaidTwice: "Zaplaceno dvakrát",
+  paymentPaidTwiceDetail: "Navíc přišlo {sats} sat přes {method}.",
   paymentClosed: "Tato platba už není otevřená.",
   backToTerminal: "Zpět na terminál",
 
@@ -127,7 +129,7 @@ export const cs = {
 
   settingsLanguage: "Jazyk",
   settingsTheme: "Vzhled",
-  themeSystem: "Podle systému",
+  themeSystem: "Systém",
   themeLight: "Světlý",
   themeDark: "Tmavý",
   settingsShop: "Obchod",
@@ -184,6 +186,7 @@ export const cs = {
   activityRow: "{date} · {label}",
   activityRowFee: "{row} · poplatek {fee} sat",
   receiptUnassigned: "Nepřiřazená platba",
+  receiptPaidAgain: "Zaplaceno podruhé ({method})",
   receiptForwarded: "Přeposláno od: {name}",
   receiptForwardedDevice: "Přeposláno ze zařízení zaměstnance",
   withdrawalLightning: "Výběr přes Lightning",
@@ -218,7 +221,11 @@ export const cs = {
   linkyScannerUnavailable: "Kamera není dostupná. Vložte npub ručně.",
   linkySent: "Odesláno do Linky",
   linkySentDetail: "{sats} sat dorazí do chatu v Linky.",
-  paymentCopy: "Klepnutím zkopírujete platební odkaz",
+  paymentEnlarge: "Klepnutím QR kód zvětšíte",
+  paymentCopyLink: "Kopírovat odkaz",
+  paymentQrKind: "Druh QR kódu",
+  paymentQrCombined: "Lightning i Cashu",
+  paymentQrLightning: "Jen Lightning",
   paymentCopied: "Platební odkaz zkopírován",
   withdrawInvoiceHint: "Faktura na {sats} sat",
 
