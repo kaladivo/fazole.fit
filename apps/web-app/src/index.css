@@ -28,8 +28,8 @@ body,
 }
 
 body {
-  position: fixed;
-  inset: 0;
+  /* iOS percentage heights exclude the translucent status bar. */
+  height: 100vh;
   background-color: var(--app-background);
 }
 
