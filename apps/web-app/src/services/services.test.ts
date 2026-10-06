@@ -271,7 +271,7 @@ describe("BitcoinPayments.request", () => {
         mintUrl: "http://127.0.0.1:9",
         name: "Kavárna",
       }),
-    ).toEqual({ reason: "below-minimum", minimumCzk: 100 });
+    ).toEqual({ reason: "below-minimum", minimumCzk: 23 });
     expect((await paymentById(evolu, id))?.sats).toBeNull();
   });
 

@@ -20,10 +20,10 @@ import {
   minimumBitcoinSats,
   readIncomingCashu,
   uniqueRequestSats,
-  wholeCzkFor,
+  minimumCzkFor,
 } from "@platitprosim/core";
 import type { CzkAmount, IncomingCashu } from "@platitprosim/core";
-import { Effect, Either, ExecutionStrategy, Exit, Scope } from "effect";
+import { Effect, Either, Exit, Scope } from "effect";
 import {
   attachBitcoinRequest,
   bitcoinRequestOf,
@@ -89,18 +89,9 @@ export const createBitcoinPayments = ({
   // Topup polling runs in this scope; closing it stops every poll, and the
   // persisted quotes resume in the next scope.
   let scope = Effect.runSync(Scope.make());
-  // A new quote polls in a scope of its own, closed once Cashu pays its payment.
-  const quoteScopes = new Map<string, Scope.CloseableScope>();
   const serially = serialQueue("bitcoin payments");
   // Settling one leg reads what the other one wrote.
   const settling = exclusive();
-
-  const stopWatching = async (quoteId: string | null) => {
-    const quoteScope = quoteId === null ? undefined : quoteScopes.get(quoteId);
-    if (quoteId === null || quoteScope === undefined) return;
-    quoteScopes.delete(quoteId);
-    await Effect.runPromise(Scope.close(quoteScope, Exit.void));
-  };
 
   /** Pays the quote's payment, or records the minted sats when another leg paid it first or no payment asks for them. */
   const recordMinted = async (minted: TopupReceipt) => {
@@ -154,7 +145,6 @@ export const createBitcoinPayments = ({
   const resume = () =>
     serially(async () => {
       await Effect.runPromise(Scope.close(scope, Exit.void));
-      quoteScopes.clear();
       scope = Effect.runSync(Scope.make());
       const handles = await runtime.runPromise(
         Scope.extend(
@@ -197,7 +187,7 @@ export const createBitcoinPayments = ({
     if (priced < minimum) {
       return {
         reason: "below-minimum",
-        minimumCzk: wholeCzkFor(minimum, rate),
+        minimumCzk: minimumCzkFor(minimum, rate),
       };
     }
     // Serial, so two requests created at once never pick the same amount.
@@ -205,9 +195,6 @@ export const createBitcoinPayments = ({
       const sats = uniqueRequestSats(
         priced,
         openBitcoinPayments(await loadPayments(evolu)),
-      );
-      const quoteScope = Effect.runSync(
-        Scope.fork(scope, ExecutionStrategy.sequential),
       );
       const topup = await runtime.runPromise(
         Effect.either(
@@ -222,16 +209,12 @@ export const createBitcoinPayments = ({
                 { lockingKey },
               ),
             ),
-            quoteScope,
+            scope,
           ),
         ),
       );
-      if (Either.isLeft(topup)) {
-        await Effect.runPromise(Scope.close(quoteScope, Exit.void));
-        return topup;
-      }
+      if (Either.isLeft(topup)) return topup;
       const { quote } = topup.right;
-      quoteScopes.set(quote.quoteId, quoteScope);
       await attachBitcoinRequest(evolu, payment.id, {
         sats,
         czkPerBtc: rate,
@@ -287,7 +270,6 @@ export const createBitcoinPayments = ({
       // The payment first: a recorded receipt marks the token handled.
       if (paid && paid.status !== "paid") {
         await completePayment(evolu, paid, { cashuReceiveId: operationId });
-        await stopWatching(paid.quoteId);
       }
       await recordReceipt(evolu, {
         operationId,

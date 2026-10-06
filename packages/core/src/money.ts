@@ -77,6 +77,8 @@ export const czkToSats = (amount: CzkAmount, czkPerBtc: number): Sats => {
 export const satsToCzk = (sats: number, czkPerBtc: number): CzkAmount =>
   CzkAmount.make(Math.round((sats * czkPerBtc * 100) / Number(SATS_PER_BTC)));
 
-/** The whole crowns from which a CZK amount buys at least `sats`, e.g. for a "from 1 Kč" note. */
-export const wholeCzkFor = (sats: number, czkPerBtc: number): CzkAmount =>
-  CzkAmount.make(Math.ceil((sats * czkPerBtc) / Number(SATS_PER_BTC)) * 100);
+/** The smallest CZK amount that `czkToSats` prices at `sats` or more, e.g. for a "from 0,20 Kč" note. */
+export const minimumCzkFor = (sats: number, czkPerBtc: number): CzkAmount =>
+  CzkAmount.make(
+    Math.floor(((sats - 1) * czkPerBtc * 100) / Number(SATS_PER_BTC)) + 1,
+  );

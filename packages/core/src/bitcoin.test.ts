@@ -19,7 +19,7 @@ import {
   uniqueRequestSats,
 } from "./bitcoin";
 import type { IncomingCashu, OpenBitcoinPayment } from "./bitcoin";
-import { CzkAmount, czkToSats, Sats, wholeCzkFor } from "./money";
+import { CzkAmount, czkToSats, Sats, minimumCzkFor } from "./money";
 
 const mint = "http://localhost:3348";
 const device = parsePubkey("a".repeat(64));
@@ -203,11 +203,12 @@ describe("minimumBitcoinSats", () => {
     expect(minimumBitcoinSats(2_500)).toBe(30);
   });
 
-  it("names the whole crowns from which the minimum is reached", () => {
+  it("names the smallest amount that reaches the minimum", () => {
     const rate = 2_300_000;
-    const from = wholeCzkFor(minimumBitcoinSats(100), rate);
-    expect(from).toBe(100);
-    expect(czkToSats(from, rate)).toBeGreaterThanOrEqual(10);
+    const from = minimumCzkFor(minimumBitcoinSats(100), rate);
+    expect(from).toBe(21);
+    expect(czkToSats(from, rate)).toBe(10);
+    expect(czkToSats(CzkAmount.make(from - 1), rate)).toBe(9);
   });
 });
 
