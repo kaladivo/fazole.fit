@@ -1,0 +1,312 @@
+import QRCodeSvg from "react-native-qrcode-svg";
+import { getVariableValue, Portal, useTheme, View } from "tamagui";
+import { BrandMark } from "./brand-mark";
+import { Button, Pressable } from "./controls";
+import type { LabeledAction } from "./controls";
+import { AmountDisplay } from "./display";
+import { Icon } from "./icons";
+import type { IconName } from "./icons";
+import { Row, Stack, Text } from "./layout";
+import { tooltipProps } from "./styles";
+import { border, enterScale, opacity, shadow, size as sizes } from "./tokens";
+
+export type KeypadKey =
+  | "0"
+  | "1"
+  | "2"
+  | "3"
+  | "4"
+  | "5"
+  | "6"
+  | "7"
+  | "8"
+  | "9"
+  | "decimal"
+  | "backspace";
+
+export interface KeypadProps {
+  accessibilityLabel: string;
+  onKeyPress: (key: KeypadKey) => void;
+  /** Accessible names of the non-digit keys. */
+  labels: { decimal: string; backspace: string };
+  /** The visible decimal separator; Czech amounts use a comma. */
+  decimalSymbol?: string | undefined;
+  disabled?: boolean | undefined;
+}
+
+const keyRows = [
+  ["1", "2", "3"],
+  ["4", "5", "6"],
+  ["7", "8", "9"],
+  ["decimal", "0", "backspace"],
+] as const satisfies readonly (readonly KeypadKey[])[];
+
+/** A thumb-sized numeric keypad for entering an amount. */
+export function Keypad({
+  accessibilityLabel,
+  onKeyPress,
+  labels,
+  decimalSymbol = ",",
+  disabled,
+}: KeypadProps) {
+  return (
+    <Stack role="group" aria-label={accessibilityLabel} gap="$sm">
+      {keyRows.map((keys) => (
+        <Row key={keys.join()} gap="$sm">
+          {keys.map((key) => (
+            <Pressable
+              key={key}
+              testID={`key-${key}`}
+              flex={1}
+              height="$key"
+              justifyContent="center"
+              borderRadius="$key"
+              backgroundColor={
+                key === "backspace" || key === "decimal"
+                  ? "$transparent"
+                  : "$neutralSoft"
+              }
+              hoverStyle={{ backgroundColor: "$backgroundPress" }}
+              pressStyle={{
+                backgroundColor: "$backgroundPress",
+                scale: 0.96,
+                opacity: opacity.dimmed,
+              }}
+              transition="fast"
+              disabled={disabled}
+              aria-label={
+                key === "decimal"
+                  ? labels.decimal
+                  : key === "backspace"
+                    ? labels.backspace
+                    : key
+              }
+              onPress={() => onKeyPress(key)}
+            >
+              {key === "backspace" ? (
+                <Icon name="Delete" size="lg" color="$colorSubtle" />
+              ) : (
+                <Text
+                  variant="heading"
+                  fontWeight="$semibold"
+                  color="$colorStrong"
+                  textAlign="center"
+                  fontVariant={["tabular-nums"]}
+                >
+                  {key === "decimal" ? decimalSymbol : key}
+                </Text>
+              )}
+            </Pressable>
+          ))}
+        </Row>
+      ))}
+    </Stack>
+  );
+}
+
+export interface QRCodeProps {
+  value: string;
+  accessibilityLabel: string;
+  /** Makes the code pressable, e.g. to copy its content. */
+  onPress?: (() => void) | undefined;
+  /** A logo in a cleared centre: the brand mark or an icon such as "Zap". */
+  logo?: "brand" | IconName | undefined;
+  size?: "md" | "lg" | undefined;
+  /** A browser tooltip on the web; ignored on native. */
+  tooltip?: string | undefined;
+  testID?: string | undefined;
+}
+
+/** A black-on-white QR code with a quiet zone, scannable in both themes. */
+export function QRCode({
+  value,
+  accessibilityLabel,
+  onPress,
+  logo,
+  size = "md",
+  tooltip,
+  testID,
+}: QRCodeProps) {
+  const theme = useTheme();
+  const Frame = onPress ? Pressable : View;
+  return (
+    <Frame
+      testID={testID}
+      role={onPress ? "button" : "img"}
+      aria-label={accessibilityLabel}
+      {...tooltipProps(tooltip)}
+      onPress={onPress}
+      position="relative"
+      padding="$lg"
+      borderRadius="$card"
+      backgroundColor="$qrBackground"
+      borderWidth={border.hairline}
+      borderColor="$borderColor"
+      alignSelf="center"
+      {...(onPress ? { pressStyle: { opacity: opacity.dimmed } } : {})}
+    >
+      <QRCodeSvg
+        value={value}
+        size={size === "lg" ? sizes.qrLg : sizes.qr}
+        color={getVariableValue(theme.qrForeground)}
+        backgroundColor={getVariableValue(theme.qrBackground)}
+        // The logo hides the centre modules; the highest level restores them.
+        ecl={logo ? "H" : "M"}
+      />
+      {logo ? (
+        <View
+          position="absolute"
+          inset={0}
+          alignItems="center"
+          justifyContent="center"
+          pointerEvents="none"
+        >
+          <View
+            padding="$xs"
+            borderRadius="$control"
+            backgroundColor="$qrBackground"
+          >
+            {logo === "brand" ? (
+              <BrandMark size="iconXl" />
+            ) : (
+              <View
+                width="$iconXl"
+                height="$iconXl"
+                borderRadius="$sm"
+                backgroundColor="$qrForeground"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Icon name={logo} color="$qrBackground" />
+              </View>
+            )}
+          </View>
+        </View>
+      ) : null}
+    </Frame>
+  );
+}
+
+export interface SuccessOverlayProps {
+  title: string;
+  /** The formatted amount, e.g. "1 250,50". */
+  amount?: string | undefined;
+  unit?: string | undefined;
+  /** A line under the amount, e.g. the method and time. */
+  detail?: string | undefined;
+  /** The way on, e.g. "New payment"; pressing the backdrop also dismisses. */
+  action?: LabeledAction | undefined;
+  onDismiss?: (() => void) | undefined;
+  /** Renders in place, filling the nearest positioned parent, instead of portaling over the whole app. */
+  contained?: boolean | undefined;
+}
+
+/** A paid confirmation: the check pops in on a green disc, then the amount. */
+export function SuccessOverlay({
+  title,
+  amount,
+  unit,
+  detail,
+  action,
+  onDismiss,
+  contained = false,
+}: SuccessOverlayProps) {
+  const overlay = (
+    <View
+      position="absolute"
+      inset={0}
+      zIndex="$overlay"
+      justifyContent="center"
+      padding="$xl"
+      role="status"
+      aria-live="assertive"
+      // The portal host turns pointer events off for everything inside it.
+      pointerEvents="auto"
+    >
+      <Pressable
+        position="absolute"
+        inset={0}
+        cursor="default"
+        backgroundColor="$scrim"
+        aria-hidden
+        tabIndex={-1}
+        onPress={onDismiss}
+        transition="fast"
+        enterStyle={{ opacity: 0 }}
+      />
+      <Stack
+        position="relative"
+        alignItems="center"
+        gap="$lg"
+        width="100%"
+        maxWidth="$narrowWidth"
+        alignSelf="center"
+        padding="$xxl"
+        paddingTop="$xxxl"
+        borderRadius="$sheet"
+        backgroundColor="$surface"
+        boxShadow={shadow.floating}
+        transition="slow"
+        enterStyle={{ opacity: 0, scale: enterScale.subtle, y: 24 }}
+      >
+        <View
+          position="relative"
+          width="$hero"
+          height="$hero"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <View
+            position="absolute"
+            inset={0}
+            borderRadius="$pill"
+            backgroundColor="$successSoft"
+            transition={["slow", { delay: 120 }]}
+            enterStyle={{ opacity: 0, scale: enterScale.pop }}
+          />
+          <View
+            width="$controlLg"
+            height="$controlLg"
+            borderRadius="$pill"
+            backgroundColor="$success"
+            alignItems="center"
+            justifyContent="center"
+            transition="slow"
+            enterStyle={{ scale: 0 }}
+          >
+            <View
+              transition={["slow", { delay: 200 }]}
+              enterStyle={{
+                opacity: 0,
+                scale: enterScale.pop,
+                rotate: "-45deg",
+              }}
+            >
+              <Icon name="Check" size="lg" color="$onSuccess" />
+            </View>
+          </View>
+        </View>
+        <Text variant="heading" textAlign="center">
+          {title}
+        </Text>
+        {amount ? <AmountDisplay value={amount} unit={unit} size="md" /> : null}
+        {detail ? (
+          <Text muted textAlign="center">
+            {detail}
+          </Text>
+        ) : null}
+        {action ? (
+          <Button
+            size="lg"
+            alignSelf="stretch"
+            marginTop="$sm"
+            onPress={action.onPress}
+          >
+            {action.label}
+          </Button>
+        ) : null}
+      </Stack>
+    </View>
+  );
+  return contained ? overlay : <Portal zIndex="$overlay">{overlay}</Portal>;
+}

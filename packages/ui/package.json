@@ -1,0 +1,65 @@
+{
+  "name": "@platitprosim/ui",
+  "private": true,
+  "version": "0.0.0",
+  "license": "0BSD",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./fonts.css": "./fonts/plus-jakarta-sans/plus-jakarta-sans.css",
+    "./tokens": "./src/tokens.ts",
+    "./vite": "./vite.ts"
+  },
+  "scripts": {
+    "eslint": "eslint --fix .",
+    "prettier": "prettier --write .",
+    "typecheck": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tamagui/animations-css": "2.7.7",
+    "@tamagui/animations-react-native": "2.7.7",
+    "lucide-react-native": "1.49.0",
+    "react-native-qrcode-svg": "6.3.26",
+    "tamagui": "2.7.7"
+  },
+  "peerDependencies": {
+    "react": ">=19.2.3 <20",
+    "react-dom": ">=19.2.3 <20",
+    "react-native": ">=0.86 <0.88",
+    "react-native-svg": ">=15.15.4 <16",
+    "react-native-web": "~0.21.0",
+    "vite": ">=7"
+  },
+  "peerDependenciesMeta": {
+    "react-dom": {
+      "optional": true
+    },
+    "react-native-web": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@platitprosim/config": "workspace:*",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.39.1",
+    "jsdom": "^28.1.0",
+    "prettier": "^3.4.2",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-native": "0.86.3",
+    "react-native-svg": "15.15.4",
+    "react-native-web": "0.21.3",
+    "typescript": "~5.9.3",
+    "vite": "^7.2.4",
+    "vitest": "^4.0.18"
+  }
+}

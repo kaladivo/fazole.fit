@@ -1,0 +1,40 @@
+import { themes } from "@platitprosim/ui/tokens";
+import { platitprosimUi } from "@platitprosim/ui/vite";
+import react from "@vitejs/plugin-react-swc";
+import { defineConfig } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
+
+export default defineConfig({
+  plugins: [
+    platitprosimUi(),
+    react(),
+    VitePWA({
+      registerType: "autoUpdate",
+      // Icons, favicon and apple-touch-icon are generated from public/logo.svg (pwa-assets.config.ts).
+      pwaAssets: { config: true, injectThemeColor: false },
+      workbox: { globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"] },
+      manifest: {
+        name: "Platit prosím",
+        short_name: "Platit prosím",
+        description: "Platební terminál pro české obchodníky",
+        lang: "cs",
+        id: "/",
+        scope: "/",
+        start_url: "/",
+        display: "standalone",
+        background_color: themes.dark.background,
+        theme_color: "#4f46e5",
+      },
+    }),
+  ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: (id) =>
+          id.includes("node_modules") ? "vendor" : undefined,
+      },
+    },
+  },
+  server: { port: 5280, strictPort: true },
+  preview: { port: 5280, strictPort: true },
+});

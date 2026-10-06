@@ -1,0 +1,86 @@
+# Local dev services for `bun run dev` (see apps/web-app/.env.development).
+# Host ports 7787 / 4011 / 3348 keep this stack clear of linky's (7777 / 4001 / 3338),
+# so a local linky dev server can run beside it against these same services.
+# Run attached in a separate terminal with `bun run dev:services`.
+services:
+  nostr-relay:
+    image: docker.io/scsibug/nostr-rs-relay:0.10.0
+    # The image is published amd64-only; declare it so arm64 hosts run it under
+    # emulation without the platform-mismatch warning.
+    platform: linux/amd64
+    ports:
+      - "${PLATITPROSIM_NOSTR_PORT:-7787}:8080"
+    volumes:
+      - nostr-relay-data:/usr/src/app/db
+    # `up --wait` must wait for the port, not the process. bash explicitly:
+    # /dev/tcp is a bash builtin, the image's /bin/sh is dash, and it ships no curl/wget.
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+      start_period: 5s
+
+  evolu-relay:
+    image: platitprosim-evolu-relay
+    build: docker/evolu-relay
+    ports:
+      - "${PLATITPROSIM_EVOLU_PORT:-4011}:4000"
+    environment:
+      EVOLU_OWNER_QUOTA_BYTES: ${EVOLU_OWNER_QUOTA_BYTES:-0}
+    volumes:
+      - evolu-relay-data:/app/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const s=require('net').connect(4000,'127.0.0.1');s.on('connect',()=>process.exit(0));s.on('error',()=>process.exit(1))",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 25
+
+  cashu-mint:
+    image: docker.io/cashubtc/nutshell:0.20.3
+    command: ["poetry", "run", "mint"]
+    ports:
+      - "${PLATITPROSIM_MINT_PORT:-3348}:3338"
+    volumes:
+      - cashu-mint-data:/app/data
+    environment:
+      MINT_BACKEND_BOLT11_SAT: FakeWallet
+      MINT_LISTEN_HOST: "0.0.0.0"
+      MINT_LISTEN_PORT: "3338"
+      MINT_PRIVATE_KEY: LOCAL_DEV_ONLY_PRIVATE_KEY
+      MINT_DATABASE: data/mint
+      # Nutshell's default MINT_INPUT_FEE_PPK is 100, so every swap costs
+      # ceil(inputs / 10) sat and a receiver nets a little less than was sent.
+      MINT_RATE_LIMIT: "FALSE"
+      # Nutshell 0.20.3's limit_websocket ignores MINT_RATE_LIMIT, so NUT-17
+      # subscriptions from several browsers need their own high limit.
+      MINT_TRANSACTION_RATE_LIMIT_PER_MINUTE: "1000000"
+      # FakeWallet simulation knobs for payment-timing tests (defaults shown).
+      # FAKEWALLET_BRR: "true"                  # auto-settle created invoices
+      # FAKEWALLET_DELAY_INCOMING_PAYMENT: "3"  # seconds before a top-up invoice settles
+      # FAKEWALLET_DELAY_OUTGOING_PAYMENT: "3"  # seconds before melt/pay returns
+      # FAKEWALLET_PAY_INVOICE_STATE: SETTLED   # or FAILED | PENDING | UNKNOWN
+      # FAKEWALLET_PAYMENT_STATE: SETTLED       # poll result: SETTLED | FAILED | PENDING | UNKNOWN
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:3338/v1/info').status==200 else 1)",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 45
+      start_period: 10s
+
+volumes:
+  nostr-relay-data:
+  evolu-relay-data:
+  cashu-mint-data:
