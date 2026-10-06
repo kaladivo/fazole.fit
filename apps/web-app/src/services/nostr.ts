@@ -77,7 +77,7 @@ export interface Nostr {
   /** Publishes the device's kind-0 name, so wallets show the shop instead of a stranger. */
   readonly publishName: (name: string) => Promise<void>;
   readonly onInboxEvent: (handler: InboxHandler) => () => void;
-  /** Every app message of the Platit prosím channel that matches its schema. */
+  /** Every app message of the fazole.fit channel that matches its schema. */
   readonly onAppMessage: (handler: AppMessageHandler) => () => void;
   /** Results of jobs whose ref starts with `refPrefix`. */
   readonly onOutboxResult: (

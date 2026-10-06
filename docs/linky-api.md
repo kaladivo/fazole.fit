@@ -1,4 +1,4 @@
-# Linky package API used by Platit prosím
+# Linky package API used by fazole.fit
 
 From `@linky-fit/linkshu` and `@linky-fit/linkstr` 0.4.0 on npm (added in linky PR https://github.com/linky-fit/linky/pull/559). See the package docs for details (`docs/payment-requests.md` in linkshu, `docs/` in linkstr).
 
@@ -13,21 +13,21 @@ From `@linky-fit/linkshu` and `@linky-fit/linkstr` 0.4.0 on npm (added in linky 
 
 ## linkstr
 
-- App messages: `const ch = appMessageChannel(AppNamespace.make("platitprosim"), Schema)`.
+- App messages: `const ch = appMessageChannel(AppNamespace.make("fazole"), Schema)`.
   - Send: `AppMessages.send(ch.draft(to, value, { clientId? }))`, or enqueue `{ _tag: "appMessage", draft }` on the `Outbox` to get retries.
   - Receive: messages arrive in `WrapInbox` as `AppMessageReceived`. Decode with `ch.decode(event)`, which returns an `Option`.
   - Wire format: gift-wrapped kind 24137, sent to the recipient only, with no self copy.
 - NIP-78:
-  - `AppData.publish(new AppDataDraft({ identifier: AppDataIdentifier.make("platitprosim:employee-device"), tags: [["p", employee]], content }))`
+  - `AppData.publish(new AppDataDraft({ identifier: AppDataIdentifier.make("fazole:employee-device"), tags: [["p", employee]], content }))`
   - `AppData.fetch(new AppDataQuery({ authors?, identifiers?, taggedPubkeys?, since? }))` and `AppData.watch(query)` (a scoped stream). Both yield `AppDataEvent {author, identifier, tags, content, createdAt, event}`.
 - Incoming tokens to the device nprofile arrive as `ChatMessageReceived`. Linky sends a `TokenBody`; other wallets send a `TextBody` holding NUT-18 JSON.
 - Sending a token to a Linky user is a chat token send, the way linky does it (`Chat.sendToken`).
 - NIP-46 client:
   ```ts
   Effect.scoped(Effect.gen(function* () {
-    const s = yield* (yield* NostrConnectClient).open(new NostrConnectClientDraft({ relays, perms: [DEVICE_AUTHORIZATION_PERMISSION], name: "Platit prosím", url }))
+    const s = yield* (yield* NostrConnectClient).open(new NostrConnectClientDraft({ relays, perms: [DEVICE_AUTHORIZATION_PERMISSION], name: "fazole.fit", url }))
     show(`${linkyUrl}/#${s.uri}`) // and/or a QR of s.uri
-    const signed = yield* s.signEvent(deviceAuthorizationTemplate({ device: devicePubkey, app: "Platit prosím" }))
+    const signed = yield* s.signEvent(deviceAuthorizationTemplate({ device: devicePubkey, app: "fazole.fit" }))
   }))
   ```
   Errors: `NostrConnectSignerTimedOut`, `NostrConnectSignRefused`, `NostrConnectRequestNotDelivered`, `NostrConnectRelaysUnreachable`. Each link allows one signature.
