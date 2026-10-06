@@ -2,6 +2,7 @@ name: Checks
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -27,6 +28,6 @@ jobs:
       - run: bun run check-code
       - run: git diff --exit-code
       - run: docker compose -f docker-compose.dev.yml up -d --wait cashu-mint
-      - run: bun run test
+      - run: bun run --sequential --workspaces --if-present test
       - if: always()
         run: docker compose -f docker-compose.dev.yml down

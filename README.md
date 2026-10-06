@@ -70,4 +70,4 @@ build commands, static output, security headers and cache rules.
 
 Set any `VITE_*` overrides in the project's Vercel environment settings before
 building. Without overrides, both apps use their production defaults. GitHub
-Actions runs code checks and tests on pushes and pull requests.
+Actions runs code checks and tests on `main` pushes and pull requests.
