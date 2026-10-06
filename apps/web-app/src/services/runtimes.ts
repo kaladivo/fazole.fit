@@ -3,6 +3,8 @@ import type { LinkshuServicesConfig } from "@linky-fit/linkshu";
 import {
   linkstrServices,
   makeNostrTransportSimplePool,
+  observeTransport,
+  RelayHealth,
   RelayUrl,
 } from "@linky-fit/linkstr";
 import type { NostrTransport } from "@linky-fit/linkstr";
@@ -21,12 +23,18 @@ export interface RuntimeConfig {
   readonly walletStores?: Omit<LinkshuServicesConfig, "bip39Seed"> | undefined;
 }
 
-export const runtimeConfigFrom = (config: typeof appConfig): RuntimeConfig => ({
-  relays: config.nostrRelays.filter(Schema.is(RelayUrl)),
+/** The default relays followed by the shop's own. */
+export const runtimeConfigFrom = (
+  config: typeof appConfig,
+  ownRelays: readonly string[] = [],
+): RuntimeConfig => ({
+  relays: [...new Set([...config.nostrRelays, ...ownRelays])].filter(
+    Schema.is(RelayUrl),
+  ),
   allowInsecureLocalhostRelays: config.allowInsecureLocalhostRelays,
 });
 
-/** linkstr on the device key, with its outbox and inbox cursor in Evolu. */
+/** linkstr on the device key, with its outbox and inbox cursor in Evolu and relay health folded from its traffic. */
 export const makeLinkstrRuntime = (
   evolu: AppEvolu,
   keys: DeviceKeys,
@@ -37,13 +45,14 @@ export const makeLinkstrRuntime = (
       secretKey: keys.nostr.secretKey,
       readRelays: config.relays,
       writeRelays: config.relays,
-      transport:
+      transport: observeTransport(
         config.transport ??
-        makeNostrTransportSimplePool({
-          allowInsecureLocalhost: config.allowInsecureLocalhostRelays,
-        }),
+          makeNostrTransportSimplePool({
+            allowInsecureLocalhost: config.allowInsecureLocalhostRelays,
+          }),
+      ),
       ...linkstrStores(evolu, keys.nostr.pubkey),
-    }),
+    }).pipe(Layer.provideMerge(RelayHealth.live)),
   );
 
 export type LinkstrRuntime = ReturnType<typeof makeLinkstrRuntime>;

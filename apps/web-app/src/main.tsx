@@ -3,18 +3,22 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { appConfig } from "./config";
 import { createAppServices, runtimeConfigFrom } from "./services";
-import { loadIdentity } from "./storage";
+import { loadIdentity, loadOwnServers, syncOwnEvoluServers } from "./storage";
 import { createBrowserEvolu } from "./storage/browserEvolu";
 import "./index.css";
 
 const root = document.getElementById("root");
 if (root) {
   const evolu = createBrowserEvolu();
-  const services = loadIdentity(evolu).then((identity) => {
+  syncOwnEvoluServers(evolu);
+  const services = Promise.all([
+    loadIdentity(evolu),
+    loadOwnServers(evolu, "nostrRelays"),
+  ]).then(([identity, ownRelays]) => {
     const started = createAppServices(
       evolu,
       identity,
-      runtimeConfigFrom(appConfig),
+      runtimeConfigFrom(appConfig, ownRelays),
     );
     started.start();
     return started;

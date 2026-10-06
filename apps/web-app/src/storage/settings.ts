@@ -4,9 +4,9 @@ import type { AppEvolu } from "./evolu";
 import { mutation, useAppEvolu } from "./evolu";
 import { settingIdFor } from "./schema";
 
-export type SettingKey = "language" | "theme";
+export type SettingKey = "language" | "theme" | "nostrRelays" | "evoluServers";
 
-const settingQuery = (evolu: AppEvolu, key: SettingKey) =>
+export const settingQuery = (evolu: AppEvolu, key: SettingKey) =>
   evolu.createQuery((db) =>
     db
       .selectFrom("setting")
