@@ -75,6 +75,9 @@ export const cs = {
     "Přihlaste se svým profilem v Linky. Majitel obchodu vás pak přidá do týmu a toto zařízení začne přijímat platby.",
   employeeLogin: "Přihlásit se přes Linky",
 
+  updateAvailable: "Je k dispozici nová verze fazole.fit",
+  updateApply: "Aktualizovat",
+
   navigation: "Hlavní sekce",
   sectionTerminal: "Terminál",
   sectionHistory: "Historie",

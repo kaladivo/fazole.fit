@@ -26,6 +26,12 @@ export const feedback: Section = {
           description="Bitcoin payments are paused."
           tone="danger"
         />
+        <UI.Notice
+          solid
+          title="A new version of fazole.fit is available"
+          icon="RefreshCcw"
+          action={{ label: "Update", onPress: () => {} }}
+        />
       </UI.Stack>
     ),
     Toast: () => (

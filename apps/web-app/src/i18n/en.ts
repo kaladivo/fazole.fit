@@ -78,6 +78,9 @@ export const en: Record<keyof typeof cs, string> = {
     "Log in with your Linky profile. The shop owner then adds you to the team, and this device starts taking payments for the shop.",
   employeeLogin: "Log in with Linky",
 
+  updateAvailable: "A new version of fazole.fit is available",
+  updateApply: "Update",
+
   navigation: "Main sections",
   sectionTerminal: "Terminal",
   sectionHistory: "History",

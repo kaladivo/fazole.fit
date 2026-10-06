@@ -1,10 +1,11 @@
-import { UIProvider } from "@platitprosim/ui";
+import { Stack, UIProvider } from "@platitprosim/ui";
 import { Suspense } from "react";
 import type { ReactNode } from "react";
 import { useColorMode } from "./colorMode";
 import { AppServicesContext } from "./services";
 import type { AppServices } from "./services";
 import { I18nProvider } from "./i18n/I18nProvider";
+import { UpdateBanner } from "./pwa/UpdateBanner";
 import { AppShell } from "./shell/AppShell";
 import { StorageProvider } from "./storage";
 import type { AppEvolu } from "./storage";
@@ -27,7 +28,10 @@ export function App({
         <Suspense fallback={null}>
           <Themed>
             <I18nProvider>
-              <AppShell />
+              <Stack flex={1} gap="$none">
+                <UpdateBanner />
+                <AppShell />
+              </Stack>
             </I18nProvider>
           </Themed>
         </Suspense>

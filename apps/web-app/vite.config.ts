@@ -9,11 +9,15 @@ export default defineConfig({
     platitprosimUi(),
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      registerType: "prompt",
+      injectRegister: false,
       // Icons, favicon and apple-touch-icon are generated from public/logo.webp (pwa-assets.config.ts).
       pwaAssets: { config: true, injectThemeColor: false },
       // sqlite3.wasm is precached too, so Evolu opens its database offline.
-      workbox: {
+      injectManifest: {
         globPatterns: ["**/*.{js,css,html,svg,png,webp,ico,woff2,wasm}"],
       },
       manifest: {
