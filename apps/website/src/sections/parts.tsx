@@ -73,7 +73,7 @@ export function SectionHeading({
       alignSelf={centered ? "center" : "flex-start"}
       alignItems={centered ? "center" : "flex-start"}
     >
-      <Text variant="label" bold color="$accent" textAlign={align}>
+      <Text variant="label" bold color="$accentText" textAlign={align}>
         {eyebrow}
       </Text>
       <Text
