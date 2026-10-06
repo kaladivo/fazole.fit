@@ -34,3 +34,7 @@ The dev mint's FakeWallet settles nothing by itself (`FAKEWALLET_BRR: "false"`),
 - `bun run mint:pay <bolt11>` marks an invoice of the local mint paid, like an external Lightning payment.
 - `bun run mint:token <sats>` prints a fresh Cashu token from the local mint. Paste it into a wallet to fund it, or send it to the terminal device.
 - A wallet on the same mint (the local linky at `:5174`) pays an invoice for real: the mint settles the melt internally. Linky pays a terminal's `bitcoin:` URI through its `creq` leg (a Cashu token over Nostr), and pays a bare `lnbc…` invoice over Lightning.
+
+## Deploy
+
+`scripts/deploy.sh web-app` (https://app.platit.twoballers.dev) and `scripts/deploy.sh website` (https://platit.twoballers.dev). The script builds locally and deploys a prebuilt static output to Vercel, because the linky packages are still `file:` deps.

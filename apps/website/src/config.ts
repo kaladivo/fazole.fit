@@ -1,7 +1,7 @@
 const env = import.meta.env;
 
 export const siteConfig = {
-  webAppUrl: env.VITE_WEB_APP_URL || "https://app.platitprosim.cz",
+  webAppUrl: env.VITE_WEB_APP_URL || "https://app.platit.twoballers.dev",
   linkyUrl: "https://linky.fit",
   githubUrl: "https://github.com/kaladivo/platitprosim.cz",
 } as const;
