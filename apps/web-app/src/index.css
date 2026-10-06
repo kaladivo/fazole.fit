@@ -3,7 +3,7 @@
 /* Painted before the bundle loads; these repeat themes.light and themes.dark of @platitprosim/ui. */
 :root {
   color-scheme: light dark;
-  background-color: #f1f5f9;
+  background-color: #f8f4ea;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
@@ -13,7 +13,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    background-color: #020617;
+    background-color: #100c09;
   }
 }
 

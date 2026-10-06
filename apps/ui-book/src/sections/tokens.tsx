@@ -51,7 +51,7 @@ export const tokens: Section = {
               {variant}
             </UI.Text>
             <UI.Text variant={variant} numberOfLines={1} flex={1}>
-              Platit prosím 1 250 Kč
+              Fazole za 1 250 Kč
             </UI.Text>
           </UI.Row>
         ))}

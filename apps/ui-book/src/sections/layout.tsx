@@ -112,5 +112,13 @@ export const layout: Section = {
         <UI.BrandMark size="hero" />
       </UI.Row>
     ),
+    Wordmark: () => (
+      <UI.Stack>
+        <UI.Wordmark />
+        <UI.Wordmark size="heading" />
+        <UI.Wordmark size="display" />
+        <UI.Wordmark size="amount" />
+      </UI.Stack>
+    ),
   },
 };

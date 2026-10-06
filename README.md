@@ -1,9 +1,9 @@
-# Platit prosím
+# fazole.fit
 
 A payment terminal in your phone for Czech merchants. Type an amount, and the customer scans a QR code to pay by bank transfer, Lightning or Cashu. There is no server and no account: data lives on your devices in [Evolu](https://evolu.dev), devices talk over Nostr, and Bitcoin settles through a Cashu mint.
 
-- App: https://app.platit.twoballers.dev
-- Website: https://platit.twoballers.dev
+- App: https://app.fazole.fit
+- Website: https://fazole.fit
 
 Built on the same stack as [Linky](https://linky.fit), using its [`@linky-fit/linkstr`](https://www.npmjs.com/package/@linky-fit/linkstr) (Nostr) and [`@linky-fit/linkshu`](https://www.npmjs.com/package/@linky-fit/linkshu) (Cashu) packages.
 

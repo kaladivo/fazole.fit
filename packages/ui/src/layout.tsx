@@ -32,13 +32,15 @@ export const Text = styled(TamaguiText, {
       label: textVariant("label"),
       body: textVariant("body"),
       title: textVariant("title"),
-      heading: textVariant("heading"),
+      heading: { ...textVariant("heading"), fontFamily: "$display" },
       display: {
         ...textVariant("display"),
+        fontFamily: "$display",
         letterSpacing: letterSpacing.display,
       },
       amount: {
         ...textVariant("amount"),
+        fontFamily: "$display",
         letterSpacing: letterSpacing.amount,
       },
     },

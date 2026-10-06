@@ -5,6 +5,7 @@ import {
   Screen,
   Stack,
   Text,
+  Wordmark,
 } from "@platitprosim/ui";
 import { useI18n } from "../i18n";
 import { navigateTo } from "../routing";
@@ -17,9 +18,7 @@ export function WelcomeScreen() {
       <Stack alignItems="center" gap="$lg" paddingVertical="$xl">
         <BrandMark size="hero" />
         <Stack alignItems="center" gap="$sm">
-          <Text variant="display" textAlign="center">
-            {t("appName")}
-          </Text>
+          <Wordmark size="display" />
           <Text muted textAlign="center">
             {t("appTagline")}
           </Text>

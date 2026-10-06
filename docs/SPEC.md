@@ -1,4 +1,6 @@
-# Platit prosím: spec
+# fazole.fit: spec
+
+Formerly "Platit prosím"; protocol identifiers (the `platitprosim` app namespace, the `Platit prosím` device-authorization app name, the Evolu database name) keep the old name so existing installs keep working.
 
 A payment terminal for Czech merchants, like qrterminal.cz but local-first. The merchant types an amount and the app shows a QR code. The customer pays by Czech bank transfer (SPD QR), by Lightning, or by Cashu (BIP-321 QR). Shops can have employees. There is no backend: data lives in Evolu, devices talk over Nostr, and money moves through a Cashu mint.
 
@@ -15,7 +17,7 @@ The sibling project `../linky` (`/Users/jarvis/workspace/linky`) is the referenc
 - React 19, Vite 7, TypeScript strict, Effect 3 (same major as linkstr/linkshu), Tamagui + react-native-web (same versions as linky), vite-plugin-pwa, Vitest.
 - No `any`. Follow linky's lint and prettier conventions. The app uses no DOM elements, `className` or `style`; it uses UI components only.
 - i18n: Czech (default) and English. Every user-facing string goes through translations.
-- Brand: a lighter indigo accent (around indigo-400/500 on dark, indigo-600 on light), clean and modern, phone-first. It must also work on desktop: centred column, max width about 480px for the terminal.
+- Brand: fazole.fit (in Czech, fazole means beans, and it was also the name of the first online money on the Czech internet). Warm bean-cream and black-bean neutrals with a green-bean accent; a cream bean with a red hilum as the logo; Bricolage Grotesque for headings and amounts; pill-shaped controls. Phone-first. It must also work on desktop: centred column, max width about 480px for the terminal.
 
 ## Storage rules
 

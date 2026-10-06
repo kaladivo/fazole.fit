@@ -18,9 +18,10 @@ export function App() {
           <UI.Row gap="$md">
             <UI.BrandMark size="control" />
             <UI.Stack gap="$none">
-              <UI.Text variant="heading" role="heading">
-                Platit prosím UI
-              </UI.Text>
+              <UI.Row gap="$sm" role="heading">
+                <UI.Wordmark size="heading" />
+                <UI.Text variant="heading">UI</UI.Text>
+              </UI.Row>
               <UI.Text variant="caption" muted>
                 {count} components · {mode} mode
               </UI.Text>
